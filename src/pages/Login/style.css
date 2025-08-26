@@ -65,6 +65,17 @@
   background-color: #0056c9;
 }
 
+.login-error {
+  color: #D0021B; /* Vermelho */
+  background-color: #FFE2E5;
+  border: 1px solid #D0021B;
+  border-radius: 6px;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 500;
+}
+
 @media (min-width: 768px) {
   .login-container {
     background-color: #ccc;

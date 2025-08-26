@@ -1,0 +1,69 @@
+.confirmation-modal {
+  text-align: center;
+  padding: 1rem;
+}
+
+.confirmation-icon {
+  margin-bottom: 1rem;
+}
+
+.confirmation-title {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.confirmation-message {
+  color: #666;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.confirmation-actions button {
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-button {
+  background-color: #f0f0f0;
+  color: #333;
+}
+.cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+.confirm-button {
+  background-color: #D0021B; /* Vermelho para ações destrutivas */
+  color: white;
+}
+.confirm-button:hover {
+  background-color: #a00115;
+}
+
+/* ... (seus estilos existentes) ... */
+
+/* Estilo padrão (vermelho) */
+.confirm-button {
+  background-color: #D0021B;
+  color: white;
+}
+.confirm-button:hover {
+  background-color: #a00115;
+}
+
+/* Nova classe para o botão de "pago" (verde) */
+.confirm-button.confirm-button-paid {
+  background-color: #16a249;
+}
+.confirm-button.confirm-button-paid:hover {
+  background-color: #138d40;
+}

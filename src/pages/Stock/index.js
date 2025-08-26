@@ -4,10 +4,10 @@ import { Package, CircleAlert, Plus, SquarePen, Minus, X, CheckCircle } from "lu
 import './style.css';
 
 export default function Stock() {
-    const { products } = useOutletContext();
+    const { products, onEditProduct, onQuantityChange, searchTerm, setSearchTerm, stockFilter, setStockFilter } = useOutletContext();
 
     const statusReturn = (quantity) => {
-        if (quantity === 0) {
+        if (quantity == 0) {
             return {
                 icon: <X size={20} color="#D0021B" />,
                 tag: <p className="product-status red">Sem estoque</p>
@@ -31,50 +31,70 @@ export default function Stock() {
     return (
         <div className="stock">
             <div className="stock-container">
-                <ul>
-                    {products.map(stock => {
-                        const statusResult = statusReturn(stock.qtd);
-                        return (
-                            <li className="product-card-container">
-                                <div className="product-card">
-                                    <div className="product-header">
-                                        <div className="product-header-title">
-                                            <Package size={21} />
-                                            <h3>{stock.product}</h3>
+                <div className="search-container">
+                    <input type="text" placeholder='Pequisar produtos...' value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    <select
+                        className="filter-dropdown"
+                        value={stockFilter}
+                        onChange={(e) => setStockFilter(e.target.value)}
+                    >
+                        <option value="all">Todos os produtos</option>
+                        <option value="low">Estoque Baixo</option>
+                        <option value="out_of_stock">Sem Estoque</option>
+                    </select>
+                </div>
+                {
+                    products.length > 0 ? (
+                        // Se a lista de produtos NÃO estiver vazia, renderize a lista (<ul>)
+                        <ul>
+                            {products.map(stock => {
+                                const statusResult = statusReturn(stock.qtd);
+                                return (
+                                    <li key={stock.id} className="product-card-container"> {/* Adicionado key={stock.id} */}
+                                        <div className="product-card">
+                                            <div className="product-header">
+                                                <div className="product-header-title">
+                                                    <Package size={21} />
+                                                    <h3>{stock.name}</h3>
+                                                </div>
+                                                {statusResult.icon}
+                                            </div>
+                                            <p className="product-categorie">{stock.categoryName}</p>
+                                            <div className="product-stock-container">
+                                                <div className="product-stock">
+                                                    <span>Estoque:</span>
+                                                    <span className="product-stock-number">{`${stock.qtd} un.`}</span>
+                                                </div>
+                                            </div>
+                                            <div className="product-status-container">
+                                                <span>
+                                                    {statusResult.tag}
+                                                </span>
+                                            </div>
+                                            <div className="add-remove">
+                                                <button className="product-add" onClick={() => onQuantityChange(stock.id, 1)}>
+                                                    <Plus size={18} />
+                                                    Adicionar
+                                                </button>
+                                                <button className="product-remove" onClick={() => onQuantityChange(stock.id, -1)}>
+                                                    <Minus size={18} />
+                                                    Retirar
+                                                </button>
+                                            </div>
+                                            <button className="product-edit" onClick={() => onEditProduct(stock)}>
+                                                <SquarePen size={18} />
+                                                Editar
+                                            </button>
                                         </div>
-                                        {statusResult.icon}
-                                    </div>
-                                    <p className="product-categorie">{stock.category}</p>
-                                    <div className="product-stock-container">
-                                        <div className="product-stock">
-                                            <span>Estoque:</span>
-                                            <span className="product-stock-number">{`${stock.qtd} un.`}</span>
-                                        </div>
-                                    </div>
-                                    <div className="product-status-container">
-                                        <span>
-                                            {statusResult.tag}
-                                        </span>
-                                    </div>
-                                    <div className="add-remove">
-                                        <button className="product-add">
-                                            <Plus size={18} />
-                                            Adicionar
-                                        </button>
-                                        <button className="product-remove">
-                                            <Minus size={18} />
-                                            Retirar
-                                        </button>
-                                    </div>
-                                    <button className="product-edit">
-                                        <SquarePen size={18} />
-                                        Editar
-                                    </button>
-                                </div>
-                            </li>
-                        )
-                    })}
-                </ul>
+                                    </li>
+                                )
+                            })}
+                        </ul>
+                    ) : (
+                        // Se a lista de produtos ESTIVER vazia, renderize a mensagem (<p>)
+                        <p className='product-not-found'>Nenhum produto encontrado com os filtros aplicados.</p>
+                    )
+                }
             </div>
         </div>
     );

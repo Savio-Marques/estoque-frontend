@@ -1,12 +1,19 @@
 import React from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Banknote, UsersRound, SquarePen, CircleCheck } from "lucide-react";
-import './style_mobile.css';
+import './style.css';
 
 export default function Debtors(){
 
-    const { debtors } = useOutletContext();
-    
+ const { 
+        debtors = [], 
+        debtorSummary = { totalValue: 0, totalDebtors: 0 }, 
+        onEditDebtor, 
+        onRequestMarkAsPaid,
+        debtorSearchTerm,
+        setDebtorSearchTerm,
+    } = useOutletContext() || {};
+        
     return(
         <div className='debtors'>
             <div className="debtors-container">
@@ -14,7 +21,7 @@ export default function Debtors(){
                     <div className="stat-card-debtors">
                         <div>
                             <p>Valor total</p>
-                            <span>R$ 365,34</span>
+                            <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(debtorSummary.totalValue)}</span>
                         </div>
                         <div className="">
                             <Banknote color='blue' size={28} />
@@ -23,13 +30,23 @@ export default function Debtors(){
                     <div className="stat-card-debtors">
                         <div>
                             <p>Clientes pendentes</p>
-                            <span>6</span>
+                            <span>{debtorSummary.totalDebtors}</span>
                         </div>
                         <div className="">
                             <UsersRound color='orange' size={28} />
                         </div>
                     </div>
                 </div>
+            <div>
+            <div className="search-container">
+                <input
+                    type="text"
+                    placeholder="Pesquisar clientes..."
+                    value={debtorSearchTerm}
+                    onChange={(e) => setDebtorSearchTerm(e.target.value)}
+                />
+            </div>  
+            </div>  
             <div className="debtors-list">
                 <div className='debtors-list-title'>
                     <h3>Pagamentos pendentes</h3>
@@ -46,21 +63,29 @@ export default function Debtors(){
                         </tr>
                     </thead>
                     <tbody>
-                    {debtors.map(debtor => (
-                        <tr key={debtor.id}>
-                            <td data-label="Cliente" className='col-table-name'><strong>{debtor.client}</strong></td>
-                            <td data-label="Descrição" className='col-table-description'>{debtor.description}</td>
-                            <td data-label="Valor" className='col-table-value'><strong>{`R$ ${debtor.value.toFixed(2).replace('.', ',')}`}</strong></td>
-                            <td data-label="Data de entrada" className='col-table-date'>{debtor.dueDate}</td>
-                            <td data-label="Ações" className='col-table-action'>
-                                <span className='debtors-table-icon-wrapper'>
-                                    <span className='debtors-table-pencil'><SquarePen size={17}/> Editar</span>
-                                    <span className='debtors-table-check'><CircleCheck size={17}/> Pago</span>
-                                </span>
-                            </td>        
-                        </tr>
-                    ))}
-                    </tbody>
+                            {debtors.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>
+                                        Nenhum pagamento pendente encontrado.
+                                    </td>
+                                </tr>
+                            ) : (
+                                debtors.map(debtor => (
+                                    <tr key={debtor.id}>
+                                        <td data-label="Cliente" className='col-table-name'><strong>{debtor.name}</strong></td>
+                                        <td data-label="Descrição" className='col-table-description'>{debtor.description}</td>
+                                        <td data-label="Valor" className='col-table-value'><strong>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(debtor.value)}</strong></td>
+                                        <td data-label="Data de entrada" className='col-table-date'>{new Date(debtor.date).toLocaleDateString('pt-BR')}</td>
+                                        <td data-label="Ações" className='col-table-action'>
+                                            <span className='debtors-table-icon-wrapper'>
+                                                <button className='debtors-table-pencil' onClick={() => onEditDebtor(debtor)}><SquarePen size={17}/> Editar</button>
+                                                <button className='debtors-table-check' onClick={() => onRequestMarkAsPaid(debtor)}><CircleCheck size={17}/> Pago</button>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
                 </table>
 
             </div>

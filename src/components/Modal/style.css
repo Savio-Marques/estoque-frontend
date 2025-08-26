@@ -4,7 +4,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5); /* Fundo semi-transparente */
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -18,7 +18,7 @@
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   position: relative;
   width: 90%;
-  max-width: 600px; /* Largura do "pop up grande" */
+  max-width: 600px;
 }
 
 .modal-close-button {

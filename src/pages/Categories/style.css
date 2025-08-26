@@ -1,0 +1,91 @@
+.categories {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.categories-container {
+    display: flex;
+    justify-content: center;
+    width: 92%;
+    flex-direction: column;
+}
+
+.categories-container ul {
+    display: grid;
+    list-style: none;
+    width: 100%;
+    padding: 0;
+    grid-template-columns: 1fr;
+    grid-gap: 22px;
+}
+
+.categories-card{
+    background-color: white;
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid #EAEAEA;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.categories-title {
+    display: flex;
+    gap: 0.7rem;
+    margin-bottom: 1rem;
+}
+
+.categories-button{
+    display: flex;
+    gap: 8px;
+    margin-bottom: 0.5rem ;
+}
+
+.categories-button button{
+    display: flex;
+    width: 50%;
+    align-items: center;
+    justify-content: center;
+    padding: 9px;
+    gap: 6px;
+    border: 1px solid #EAEAEA;
+    border-radius: 7px;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+.categories-delete-button {
+    background-color: #ef4343;
+    color: white;
+}
+
+.categories-edit-button:hover {
+    background-color: #e6f2ff;
+    color: #2463eb;
+}
+
+.categories-delete-button:hover {
+    background-color: #e03939;
+}
+
+@media (min-width: 768px) {
+    .categories-container {
+        width: 96%;
+    }
+
+    .categories-container ul {
+        grid-template-columns: repeat(2, 1fr);
+        grid-gap: 20px;
+    }
+}
+
+@media (min-width: 1024px) {
+
+    .categories-container {
+        width: 82%;
+    }
+
+    .categories-container ul {
+        grid-template-columns: repeat(3, 1fr);
+        grid-gap: 24px;
+    }
+}

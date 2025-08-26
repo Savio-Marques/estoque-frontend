@@ -13,6 +13,7 @@
   flex-direction: row;
   gap: 1rem;
   width: 100%;
+  margin-bottom: 2.3rem;
 }
 
 .stat-card-debtors {
@@ -29,7 +30,6 @@
 .stat-card-debtors p {
   margin: 0 0 0.25rem 0;
   font-size: 0.8rem;
-  color: #555;
 }
 
 .stat-card-debtors span {
@@ -39,6 +39,7 @@
 
 .debtors-list {
   margin-top: 2.3rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .debtors-list-title {
@@ -221,12 +222,17 @@
   width: 100%;
 }
 
+.debtors-list{
+  box-shadow: none;
+}
+
 .debtors-list-table tr {
   margin-bottom: 1rem;
   border: 1px solid #EAEAEA;
   border-radius: 8px;
   background-color: white;
   padding: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .debtors-list-table tr:first-child {
