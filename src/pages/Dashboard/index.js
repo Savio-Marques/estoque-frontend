@@ -1,6 +1,6 @@
 import { React, useState, useEffect } from 'react';
 import { Package, LogOut, CircleAlert, X, CircleDollarSign, Plus, Tag } from "lucide-react";
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import EditProductModal from '../../components/EditProductModal';
 import EditDebtorModal from '../../components/EditDebtorModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -54,6 +54,8 @@ export default function Dashboard() {
 
     // Hooks e Constantes
     const token = localStorage.getItem('accessToken');
+
+    const navigate = useNavigate();
 
     const fetchInitialData = async () => {
         try {
@@ -333,6 +335,20 @@ export default function Dashboard() {
         });
     };
 
+    const handleLogout = async () => {
+        try {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('username');
+
+            api.defaults.headers.Authorization = null;
+
+            navigate('/');
+
+        } catch (error) {
+            toast.error('Não foi possível fazer logout. Tente novamente.');
+            console.error("Erro no logout:", error);
+        }
+    };
 
 
     // Renderização
@@ -361,7 +377,7 @@ export default function Dashboard() {
                             <p>Sistema de controle de produtos e inventário</p>
                         </div>
                     </div>
-                    <button type='button' className="logout-button">
+                    <button type='button' className="logout-button" onClick={handleLogout}>
                         <LogOut color='black' />
                     </button>
                 </div>
