@@ -38,7 +38,7 @@ export default function Categories() {
                         ))}
                     </ul>
                 ) : (
-                    <p>Nenhuma categoria cadastrada.</p>
+                    <p className='product-not-found'>Nenhuma categoria cadastrada.</p>
                 )}
             </div>
         </div>
