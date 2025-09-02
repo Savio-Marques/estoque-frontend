@@ -1,70 +1,41 @@
-# Getting Started with Create React App
+# Controle de Estoque - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+![Status do Projeto](https://img.shields.io/badge/status-finalizado-brightgreen)
+![Tecnologia](https://img.shields.io/badge/tecnologia-React-blue.svg)
 
-## Available Scripts
+## 📖 Descrição
 
-In the project directory, you can run:
+Este é o repositório do frontend para o projeto de Controle de Estoque. A interface foi desenvolvida com **React** para ser uma Single Page Application (SPA) moderna, rápida e intuitiva, consumindo a API construída em Java com Spring Boot.
 
-### `npm start`
+O design é **totalmente responsivo**, garantindo uma experiência de usuário consistente e agradável em desktops, tablets e smartphones.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 🔗 Links Importantes
 
-### `npm test`
+* **Demonstração em vídeo:** [Assista aqui](https://youtu.be/z7ac9HeyzKw)
+* **Aplicação em produção:** [Acesse o site](https://buscapestoque.vercel.app)
+* **Repositório do Backend (API):** [Ver no GitHub](https://github.com/Savio-Marques/estoque-backend)
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## ✨ Funcionalidades
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+* **Autenticação Segura:** Telas de login e registro com validação de dados e comunicação segura via tokens JWT.
+* **Dashboard Intuitivo:** Painel principal para visualização rápida de produtos, categorias e status do estoque.
+* **Gerenciamento Completo:** Interface para criar, visualizar, editar e deletar produtos e categorias.
+* **Controle de Pagamentos:** Seção dedicada para gerenciar pagamentos pendentes de clientes.
+* **Design Responsivo:** Layout que se adapta perfeitamente a qualquer tamanho de tela, facilitando o uso em dispositivos móveis.
+* **Feedback ao Usuário:** Notificações e alertas para ações como sucesso em cadastros ou erros de validação.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 🚀 Tecnologias Utilizadas
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+* **React:** Biblioteca principal para a construção da interface.
+* **React Router:** Para gerenciamento das rotas da aplicação.
+* **Axios:** Para realizar as requisições HTTP para a API backend.
+* **CSS3 / Styled Components:** Para estilização dos componentes, garantindo um visual moderno e manutenível.
+* **NPM:** Gerenciador de pacotes do projeto.
 
-### `npm run eject`
+## ✒️ Autor
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+* **Sávio Marques** - [Perfil no GitHub](https://github.com/Savio-Marques)
