@@ -92,44 +92,8 @@
 .debtors-table-icon-wrapper {
   display: flex;
   justify-content: center;
-  align-items: last baseline;
+  align-items: center;
   border-radius: 10px;
-}
-
-.debtors-table-pencil {
-  display: flex;
-  gap: 5px;
-  padding: 0.5rem 1.6rem;
-  border-radius: 9px 0 0 9px;
-  background-color: #f8f7fc;
-  align-items: center;
-  font-weight: 600;
-  border: 1px solid #EAEAEA;
-  border-top: none;
-  border-bottom: none;
-  border-left: none;
-  transition: all 0.2s ease-in-out;
-}
-
-.debtors-table-check {
-  display: flex;
-  gap: 5px;
-  font-weight: 600;
-  align-items: center;
-  padding: 0.5rem 1.6rem;
-  background-color: #16a249;
-  border-radius: 0 9px 9px 0;
-  color: white;
-  transition: all 0.2s ease-in-out;
-}
-
-.debtors-table-pencil:hover {
-  background-color: #e6f2ff;
-  color: #2474ee;
-}
-
-.debtors-table-check:hover {
-  background-color: #138d40;
 }
 
 .debtors-table-pencil {
@@ -143,6 +107,7 @@
   border: 1px solid #EAEAEA;
   border-right: none;
   transition: all 0.2s ease-in-out;
+  cursor: pointer;
 }
 
 .debtors-table-check {
@@ -156,6 +121,7 @@
   color: white;
   transition: all 0.2s ease-in-out;
   border: 1px solid #EAEAEA;
+  cursor: pointer;
 }
 
 .debtors-table-pencil:hover {
@@ -187,121 +153,81 @@
 }
 
 @media(max-width: 1024px) {
-  .debtors-container{
+  .debtors-container {
     width: 96%;
   }
 }
 
 @media (max-width: 768px) {
-
-  .debtors-container{
+  .debtors-container {
     width: 92%;
   }
 
   .stats-group-debtors {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-}
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+  }
 
   .debtors-list-table {
-  background-color: transparent;
-  border: none;
-}
+    background-color: transparent;
+    border: none;
+  }
 
-.debtors-list-table thead {
-  display: none;
-}
+  .debtors-list-table thead {
+    display: none;
+  }
 
-.debtors-list-table,
-.debtors-list-table tbody,
-.debtors-list-table tr,
-.debtors-list-table td {
-  display: block;
-  width: 100%;
-}
+  .debtors-list-table,
+  .debtors-list-table tbody,
+  .debtors-list-table tr,
+  .debtors-list-table td {
+    display: block;
+    width: 100%;
+  }
 
-.debtors-list{
-  box-shadow: none;
-}
+  .debtors-list {
+    box-shadow: none;
+  }
 
-.debtors-list-table tr {
-  margin-bottom: 1rem;
-  border: 1px solid #EAEAEA;
-  border-radius: 8px;
-  background-color: white;
-  padding: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
+  .debtors-list-table tr {
+    margin-bottom: 1rem;
+    border: 1px solid #EAEAEA;
+    border-radius: 8px;
+    background-color: white;
+    padding: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
 
-.debtors-list-table tr:first-child {
-  margin-bottom: 1rem;
-  border: 1px solid #EAEAEA;
-  border-radius: 0 0 8px 8px;
-  background-color: white;
-  padding: 0.5rem;
-}
+  .debtors-list-table td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #EAEAEA;
+    text-align: right;
+    position: relative;
+  }
 
-.debtors-list-table td {
-  padding: 0.8rem 1rem;
-  border-bottom: 1px solid #EAEAEA;
-  text-align: right;
-  position: relative;
-}
+  .debtors-list-table td:last-child {
+    border-bottom: none;
+  }
 
-.debtors-list-table td:last-child {
-  border-bottom: none;
-}
+  .debtors-list-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 1rem;
+    font-weight: 600;
+    color: #333;
+    text-align: left;
+  }
 
-.debtors-list-table td::before {
-  content: attr(data-label);
-  position: absolute;
-  left: 1rem;
-  font-weight: 600;
-  color: #333;
-  text-align: left;
-  align-items: center;
-}
+  .debtors-table-action {
+    display: flex;
+    justify-content: flex-end;
+  }
 
-.debtors-list-table td:last-child::before {
-  content: attr(data-label);
-  position: absolute;
-  top: 1.4rem;
-  left: 1rem;
-  font-weight: 600;
-  color: #333;
-  text-align: left;
-  align-items: center;
-}
-
-.debtors-table-action {
-  display: flex;
-  justify-content: space-around;
-}
-
-.debtors-table-icon-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.col-table-name {
-  width: 100%;
-}
-
-.debtors-list-table .col-table-value {
-  width: 100%;
-  text-align: end;
-}
-
-.debtors-list-table .col-table-date {
-  width: 100%;
-  text-align: end;
-}
-
-.debtors-list-table .col-table-action {
-  width: 100%;
-  text-align: center;
-}
+  .debtors-table-icon-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
 }

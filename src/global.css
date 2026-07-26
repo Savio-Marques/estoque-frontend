@@ -1,18 +1,44 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
-*{
-    margin: 0;
-    padding: 0;
-    outline: 0;
-    box-sizing: border-box;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-body{
-    font: 400 14px Roboto, sans-serif;
-    background-color: #f8f7fc;
-    -webkit-font-smoothing: antialiased;
+body {
+  font: 400 14px 'Roboto', sans-serif;
+  background-color: #f8f7fc;
+  color: #212529;
+  -webkit-font-smoothing: antialiased;
 }
 
-button{
-    cursor: pointer;
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input, select, textarea {
+  font-family: inherit;
+}
+
+/* Indicadores acessíveis de foco para navegação por teclado */
+:focus-visible {
+  outline: 2px solid #0068f0;
+  outline-offset: 2px;
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f2f4;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
