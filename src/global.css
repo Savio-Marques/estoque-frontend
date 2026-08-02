@@ -20,6 +20,7 @@ button {
 
 input, select, textarea {
   font-family: inherit;
+  font-size: 16px;
 }
 
 /* Indicadores acessíveis de foco para navegação por teclado */
