@@ -35,7 +35,7 @@ function Login() {
   return (
     <div className="velora-theme min-h-screen w-full grid grid-cols-1 lg:grid-cols-12 bg-[var(--ledger-bg)] text-[var(--ledger-ink)]">
       {/* Left Column: Clean Editorial Login Form */}
-      <section className="lg:col-span-5 flex flex-col justify-between px-6 py-8 sm:px-12 lg:px-14 bg-[var(--ledger-surface)] border-r border-[var(--ledger-border)]">
+      <section className="pt-safe-top lg:col-span-5 flex flex-col justify-between px-6 py-8 sm:px-12 lg:px-14 bg-[var(--ledger-surface)] border-r border-[var(--ledger-border)]">
         <div className="flex items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-xl bg-[var(--ledger-sidebar-bg)] text-white shadow-sm">
             <PackageCheck className="size-5 text-emerald-400" />
@@ -91,7 +91,7 @@ function Login() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoFocus
-                className="h-11 rounded-xl border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] px-3.5 text-sm text-[var(--ledger-ink)] placeholder:text-[var(--ledger-ink-subtle)] focus-visible:border-[var(--ledger-accent)] focus-visible:bg-white focus-visible:ring-[var(--ledger-accent)]/20"
+                className="h-11 rounded-xl border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] px-3.5 text-base md:text-sm text-[var(--ledger-ink)] placeholder:text-[var(--ledger-ink-subtle)] focus-visible:border-[var(--ledger-accent)] focus-visible:bg-white focus-visible:ring-[var(--ledger-accent)]/20"
               />
             </div>
 
@@ -111,7 +111,7 @@ function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-11 rounded-xl border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] pr-11 pl-3.5 text-sm text-[var(--ledger-ink)] placeholder:text-[var(--ledger-ink-subtle)] focus-visible:border-[var(--ledger-accent)] focus-visible:bg-white focus-visible:ring-[var(--ledger-accent)]/20"
+                  className="h-11 rounded-xl border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] pr-11 pl-3.5 text-base md:text-sm text-[var(--ledger-ink)] placeholder:text-[var(--ledger-ink-subtle)] focus-visible:border-[var(--ledger-accent)] focus-visible:bg-white focus-visible:ring-[var(--ledger-accent)]/20"
                 />
                 <button
                   type="button"

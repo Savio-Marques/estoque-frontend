@@ -1,7 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom'; // 1. Importe
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Service worker registration failed silently
+    });
+  });
+}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

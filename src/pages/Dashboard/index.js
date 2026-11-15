@@ -242,7 +242,7 @@ function Dashboard() {
       </aside>
 
       {/* Mobile Compact Sticky Topbar (< lg) */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[var(--ledger-sidebar-bg)] px-4 py-2.5 text-white lg:hidden">
+      <header className="pt-safe-top sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[var(--ledger-sidebar-bg)] px-4 py-2.5 text-white lg:hidden">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
             <PackageCheck className="size-4" />

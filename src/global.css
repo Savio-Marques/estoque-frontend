@@ -68,6 +68,10 @@
   .pb-safe-nav {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+
+  .pt-safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }
 
 /* Shared Editorial Form & Search Primitives inside @layer components so Tailwind utilities can override cleanly */
@@ -131,7 +135,7 @@
   }
 
   /* Prevent forced Safari iOS auto-zoom on inputs (< 16px) and enlarge touch targets */
-  @media (max-width: 768px) {
+  @media (max-width: 768px), (pointer: coarse) {
     .ledger-input,
     .ledger-select,
     .ledger-textarea {
@@ -198,10 +202,16 @@
     transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 768px), (pointer: coarse) {
     .ledger-search-input {
       height: 2.85rem;
       font-size: 16px;
+    }
+
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+      font-size: max(16px, 1rem);
     }
   }
 
