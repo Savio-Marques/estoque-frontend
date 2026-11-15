@@ -234,13 +234,14 @@ export default function Users() {
               />
             </div>
             <div className="add-inputs-wrapper">
-              <label htmlFor="new-user-password">Senha Inicial*</label>
+              <label htmlFor="new-user-password">Senha Inicial* (mín. 6 caracteres)</label>
               <input
                 id="new-user-password"
                 type="password"
                 placeholder="Digite a senha de acesso"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
+                minLength={6}
                 required
               />
             </div>
@@ -294,13 +295,14 @@ export default function Users() {
                 />
               </div>
               <div className="add-inputs-wrapper">
-                <label htmlFor="edit-user-password">Nova Senha (opcional)</label>
+                <label htmlFor="edit-user-password">Nova Senha (opcional, mín. 6 caracteres)</label>
                 <input
                   id="edit-user-password"
                   type="password"
                   placeholder="Deixe vazio para manter a senha atual"
                   value={editPassword}
                   onChange={(e) => setEditPassword(e.target.value)}
+                  minLength={6}
                 />
               </div>
               <div className="add-inputs-wrapper">

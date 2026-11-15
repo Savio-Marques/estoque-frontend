@@ -26,6 +26,8 @@ api.interceptors.response.use(
       localStorage.removeItem('accessToken');
       localStorage.removeItem('token');
       localStorage.removeItem('username');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userRole');
       if (window.location.pathname !== '/') {
         window.location.href = '/';
       }

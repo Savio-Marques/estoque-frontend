@@ -68,13 +68,14 @@ export default function ProfileModal({ isOpen, onClose }) {
           />
         </div>
         <div className="add-inputs-wrapper">
-          <label htmlFor="profile-new-password">Nova Senha</label>
+          <label htmlFor="profile-new-password">Nova Senha (mín. 6 caracteres)</label>
           <input
             id="profile-new-password"
             type="password"
             placeholder="Digite a nova senha"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
+            minLength={6}
           />
         </div>
         <button className="add-button" type="submit" disabled={isSubmitting}>
