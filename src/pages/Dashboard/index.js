@@ -17,6 +17,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useProductSummary, useProductMutations } from '../../hooks/useProducts';
 import { useCategories, useCategoryMutations } from '../../hooks/useCategories';
 import { useDebtorMutations } from '../../hooks/useDebtors';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetBody,
+} from '@/components/ui/sheet';
 import Modal from '../../components/Modal';
 import AddProductForm from '../../components/AddProductForm';
 import ProfileModal from '../../components/ProfileModal';
@@ -36,11 +44,12 @@ function Dashboard() {
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMovementsOpen, setIsMovementsOpen] = useState(false);
+  const [isMobileQuickMenuOpen, setIsMobileQuickMenuOpen] = useState(false);
 
   const [newCategoryName, setNewCategoryName] = useState('');
   const [debtorName, setDebtorName] = useState('');
+  const [debtorDescription, setDebtorDescription] = useState('');
   const [debtorValue, setDebtorValue] = useState('');
-  const [debtorDueDate, setDebtorDueDate] = useState('');
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -49,11 +58,12 @@ function Dashboard() {
     setActiveModal(null);
     setNewCategoryName('');
     setDebtorName('');
+    setDebtorDescription('');
     setDebtorValue('');
-    setDebtorDueDate('');
   };
 
   const handleOpenModal = (modalName) => {
+    setIsMobileQuickMenuOpen(false);
     setActiveModal(modalName);
   };
 
@@ -80,7 +90,7 @@ function Dashboard() {
   const handleSaveCategory = (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
-    addCategoryMutation.mutate({ name: newCategoryName });
+    addCategoryMutation.mutate(newCategoryName.trim());
   };
 
   const handleSaveProduct = (productData) => {
@@ -90,9 +100,9 @@ function Dashboard() {
   const handleSaveDebtor = (e) => {
     e.preventDefault();
     addDebtorMutation.mutate({
-      name: debtorName,
+      name: debtorName.trim(),
+      description: debtorDescription.trim(),
       value: parseFloat(debtorValue),
-      dueDate: debtorDueDate,
     });
   };
 
@@ -111,7 +121,6 @@ function Dashboard() {
 
       {/* Desktop Sidebar (>= lg) */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col bg-[var(--ledger-sidebar-bg)] text-stone-100 border-r border-white/10">
-        {/* Brand */}
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-400/25">
             <PackageCheck className="size-5" />
@@ -126,7 +135,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Navigation */}
         <div className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
           <div>
             <p className="px-3 pb-2 text-[0.68rem] font-semibold uppercase tracking-widest text-stone-400">
@@ -155,7 +163,6 @@ function Dashboard() {
             </nav>
           </div>
 
-          {/* Quick Actions */}
           <div>
             <p className="px-3 pb-2 text-[0.68rem] font-semibold uppercase tracking-widest text-stone-400">
               Ações Rápidas
@@ -197,7 +204,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* User Footer */}
         <div className="border-t border-white/10 p-3.5">
           <div className="rounded-xl bg-white/[0.04] p-3 ring-1 ring-white/10">
             <div className="flex items-center gap-3">
@@ -235,8 +241,8 @@ function Dashboard() {
         </div>
       </aside>
 
-      {/* Mobile Compact Topbar (< lg) */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[var(--ledger-sidebar-bg)] px-4 py-3 text-white lg:hidden">
+      {/* Mobile Compact Sticky Topbar (< lg) */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[var(--ledger-sidebar-bg)] px-4 py-2.5 text-white lg:hidden">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
             <PackageCheck className="size-4" />
@@ -247,6 +253,14 @@ function Dashboard() {
         </div>
 
         <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setIsMobileQuickMenuOpen(true)}
+            className="inline-flex h-9 items-center gap-1 rounded-lg bg-[var(--ledger-accent)] px-2.5 text-xs font-semibold text-white transition-colors active:scale-95"
+          >
+            <Plus className="size-4" />
+            <span>Novo</span>
+          </button>
           <button
             type="button"
             onClick={() => setIsMovementsOpen(true)}
@@ -279,7 +293,7 @@ function Dashboard() {
 
       {/* Main Content Area */}
       <div className="flex-1 lg:pl-64">
-        <main className="mx-auto w-full max-w-[1380px] px-4 py-5 pb-24 sm:px-6 lg:px-8 lg:py-8 lg:pb-10">
+        <main className="mx-auto w-full max-w-[1380px] px-4 py-5 pb-28 sm:px-6 lg:px-8 lg:py-8 lg:pb-10">
           <Outlet
             context={{
               summary,
@@ -290,12 +304,12 @@ function Dashboard() {
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar (< lg) */}
+      {/* Mobile Bottom Navigation Bar (< lg) with iOS safe-area support */}
       <nav
         aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--ledger-border)] bg-[var(--ledger-surface)]/95 backdrop-blur-md lg:hidden"
+        className="pb-safe-nav fixed inset-x-0 bottom-0 z-30 border-t border-[var(--ledger-border)] bg-[var(--ledger-surface)]/95 backdrop-blur-md lg:hidden"
       >
-        <div className={`grid ${user?.role === 'ADMIN' ? 'grid-cols-4' : 'grid-cols-3'} h-16`}>
+        <div className={`grid ${user?.role === 'ADMIN' ? 'grid-cols-4' : 'grid-cols-3'} min-h-[60px]`}>
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -303,7 +317,7 @@ function Dashboard() {
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `flex flex-col items-center justify-center gap-1 text-[0.7rem] font-semibold transition-colors ${
+                  `flex flex-col items-center justify-center gap-1 py-1.5 text-[0.7rem] font-semibold transition-colors ${
                     isActive
                       ? 'text-[var(--ledger-accent)]'
                       : 'text-[var(--ledger-ink-subtle)] hover:text-[var(--ledger-ink)]'
@@ -328,6 +342,74 @@ function Dashboard() {
         </div>
       </nav>
 
+      {/* Mobile Quick Create Sheet (Android / iOS thumb-friendly) */}
+      <Sheet open={isMobileQuickMenuOpen} onOpenChange={setIsMobileQuickMenuOpen}>
+        <SheetContent
+          side="bottom"
+          className="bg-[var(--ledger-surface)] border-t border-[var(--ledger-border)] text-[var(--ledger-ink)] pb-safe-nav"
+        >
+          <SheetHeader className="border-b border-[var(--ledger-border)] pb-3">
+            <SheetTitle className="text-base font-bold text-[var(--ledger-ink)]">
+              Cadastro Rápido
+            </SheetTitle>
+            <SheetDescription className="text-xs text-[var(--ledger-ink-subtle)]">
+              Escolha o que deseja registrar agora
+            </SheetDescription>
+          </SheetHeader>
+          <SheetBody className="py-4 space-y-2.5">
+            <button
+              type="button"
+              onClick={() => handleOpenModal('addProduct')}
+              className="flex w-full items-center gap-3.5 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-4 py-3.5 text-left transition-colors active:bg-[var(--ledger-surface-muted)]"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--ledger-accent-soft)] text-[var(--ledger-accent)]">
+                <Boxes className="size-5" />
+              </span>
+              <div>
+                <p className="text-sm font-bold text-[var(--ledger-ink)]">Novo Produto</p>
+                <p className="text-xs text-[var(--ledger-ink-subtle)]">
+                  Adicionar item ao inventário de estoque
+                </p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleOpenModal('addPayment')}
+              className="flex w-full items-center gap-3.5 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-4 py-3.5 text-left transition-colors active:bg-[var(--ledger-surface-muted)]"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--ledger-amber-soft)] text-amber-800">
+                <BookOpen className="size-5" />
+              </span>
+              <div>
+                <p className="text-sm font-bold text-[var(--ledger-ink)]">
+                  Novo Cliente na Caderneta
+                </p>
+                <p className="text-xs text-[var(--ledger-ink-subtle)]">
+                  Registrar venda fiada ou valor pendente
+                </p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleOpenModal('addCategory')}
+              className="flex w-full items-center gap-3.5 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-4 py-3.5 text-left transition-colors active:bg-[var(--ledger-surface-muted)]"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-stone-200/80 text-[var(--ledger-ink-muted)]">
+                <Tags className="size-5" />
+              </span>
+              <div>
+                <p className="text-sm font-bold text-[var(--ledger-ink)]">Nova Categoria</p>
+                <p className="text-xs text-[var(--ledger-ink-subtle)]">
+                  Criar grupo para organizar produtos
+                </p>
+              </div>
+            </button>
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
+
       {/* Shared Creation Modals */}
       <Modal
         isOpen={activeModal === 'addCategory'}
@@ -343,7 +425,7 @@ function Dashboard() {
               type="text"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="Ex: Bebidas, Vestuário..."
+              placeholder="Ex: Bebidas, Biscoitos, Higiene..."
               required
               autoFocus
             />
@@ -390,36 +472,38 @@ function Dashboard() {
               autoFocus
             />
           </div>
-          <div className="ledger-form-row">
-            <div className="ledger-field">
-              <label htmlFor="debtorValue">Valor Devido</label>
-              <div className="ledger-input-affix">
-                <span className="affix-prefix">R$</span>
-                <input
-                  id="debtorValue"
-                  className="ledger-input mono"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={debtorValue}
-                  onChange={(e) => setDebtorValue(e.target.value)}
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-            </div>
-            <div className="ledger-field">
-              <label htmlFor="debtorDueDate">Data de Vencimento</label>
+
+          <div className="ledger-field">
+            <label htmlFor="debtorDescription">Descrição / Itens</label>
+            <textarea
+              id="debtorDescription"
+              className="ledger-textarea"
+              value={debtorDescription}
+              onChange={(e) => setDebtorDescription(e.target.value)}
+              placeholder="Ex: 1 Coca-Cola 2L, 4 Biscoitos Amori..."
+              maxLength={255}
+            />
+          </div>
+
+          <div className="ledger-field">
+            <label htmlFor="debtorValue">Valor Devido</label>
+            <div className="ledger-input-affix">
+              <span className="affix-prefix">R$</span>
               <input
-                id="debtorDueDate"
+                id="debtorValue"
                 className="ledger-input mono"
-                type="date"
-                value={debtorDueDate}
-                onChange={(e) => setDebtorDueDate(e.target.value)}
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                value={debtorValue}
+                onChange={(e) => setDebtorValue(e.target.value)}
+                placeholder="0.00"
                 required
               />
             </div>
           </div>
+
           <div className="ledger-form-actions">
             <button type="button" className="ledger-btn-secondary" onClick={handleCloseModal}>
               Cancelar

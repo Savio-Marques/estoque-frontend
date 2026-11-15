@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import Modal from '../Modal';
 import './style.css';
 
@@ -17,11 +24,11 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
     if (product) {
       setFormData({
         name: product.name || '',
-        qtd: product.qtd || 0,
-        costPrice: product.costPrice || 0,
-        salePrice: product.salePrice || 0,
-        minQuantity: product.minQuantity || 0,
-        categoryId: product.categoryId || product.category?.id || '',
+        qtd: product.qtd ?? 0,
+        costPrice: product.costPrice ?? 0,
+        salePrice: product.salePrice ?? 0,
+        minQuantity: product.minQuantity ?? 0,
+        categoryId: String(product.categoryId || product.category?.id || ''),
       });
     }
   }, [product]);
@@ -51,6 +58,10 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
     });
   };
 
+  const selectedCategoryName = categories.find(
+    (c) => String(c.id) === String(formData.categoryId)
+  )?.name;
+
   return (
     <Modal isOpen={Boolean(product)} onClose={onClose} title={`Editar · ${product.name}`}>
       <form className="ledger-form" onSubmit={handleSubmit}>
@@ -69,23 +80,25 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
 
         <div className="ledger-field">
           <label htmlFor="edit-product-category">Categoria</label>
-          <select
-            id="edit-product-category"
-            className="ledger-select"
-            name="categoryId"
-            value={formData.categoryId}
-            onChange={handleChange}
-            required
+          <Select
+            value={formData.categoryId ? String(formData.categoryId) : null}
+            onValueChange={(val) =>
+              setFormData((prev) => ({ ...prev, categoryId: val ? String(val) : '' }))
+            }
           >
-            <option value="" disabled>
-              Selecione uma categoria...
-            </option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger id="edit-product-category" className="w-full">
+              <SelectValue placeholder="Selecione uma categoria...">
+                {() => selectedCategoryName || 'Selecione uma categoria...'}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={String(cat.id)}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="ledger-form-row">
@@ -95,6 +108,7 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
               id="edit-product-qtd"
               className="ledger-input mono"
               type="number"
+              inputMode="numeric"
               name="qtd"
               min="0"
               value={formData.qtd}
@@ -109,6 +123,7 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
               id="edit-product-min"
               className="ledger-input mono"
               type="number"
+              inputMode="numeric"
               name="minQuantity"
               min="0"
               value={formData.minQuantity}
@@ -126,6 +141,7 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
                 id="edit-product-cost"
                 className="ledger-input mono"
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 min="0"
                 name="costPrice"
@@ -143,6 +159,7 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
                 id="edit-product-sale"
                 className="ledger-input mono"
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 min="0"
                 name="salePrice"

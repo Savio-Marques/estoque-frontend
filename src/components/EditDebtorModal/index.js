@@ -3,14 +3,14 @@ import Modal from '../Modal';
 import './style.css';
 
 function EditDebtorModal({ debtor, onSave, onClose }) {
-  const [formData, setFormData] = useState({ name: '', value: '', dueDate: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', value: '' });
 
   useEffect(() => {
     if (debtor) {
       setFormData({
         name: debtor.name || '',
-        value: debtor.value || '',
-        dueDate: debtor.dueDate ? debtor.dueDate.split('T')[0] : '',
+        description: debtor.description || '',
+        value: debtor.value ?? '',
       });
     }
   }, [debtor]);
@@ -26,6 +26,8 @@ function EditDebtorModal({ debtor, onSave, onClose }) {
     e.preventDefault();
     onSave({
       ...formData,
+      name: formData.name.trim(),
+      description: formData.description.trim(),
       value: parseFloat(formData.value),
     });
   };
@@ -46,33 +48,32 @@ function EditDebtorModal({ debtor, onSave, onClose }) {
           />
         </div>
 
-        <div className="ledger-form-row">
-          <div className="ledger-field">
-            <label htmlFor="edit-debtor-value">Valor Devido</label>
-            <div className="ledger-input-affix">
-              <span className="affix-prefix">R$</span>
-              <input
-                id="edit-debtor-value"
-                className="ledger-input mono"
-                type="number"
-                step="0.01"
-                min="0"
-                name="value"
-                value={formData.value}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
+        <div className="ledger-field">
+          <label htmlFor="edit-debtor-description">Descrição / Itens</label>
+          <textarea
+            id="edit-debtor-description"
+            className="ledger-textarea"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Ex: 1 Coca-Cola 2L, 4 Biscoitos Amori..."
+            maxLength={255}
+          />
+        </div>
 
-          <div className="ledger-field">
-            <label htmlFor="edit-debtor-due">Data de Vencimento</label>
+        <div className="ledger-field">
+          <label htmlFor="edit-debtor-value">Valor Devido</label>
+          <div className="ledger-input-affix">
+            <span className="affix-prefix">R$</span>
             <input
-              id="edit-debtor-due"
+              id="edit-debtor-value"
               className="ledger-input mono"
-              type="date"
-              name="dueDate"
-              value={formData.dueDate}
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              name="value"
+              value={formData.value}
               onChange={handleChange}
               required
             />

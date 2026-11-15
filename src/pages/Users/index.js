@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
-import { Pencil, Shield, Trash2, UserPlus, Users as UsersIcon } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Pencil, Search, Shield, Trash2, UserPlus, Users as UsersIcon, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUsers, useUserMutations } from '../../hooks/useUsers';
 import { InsightCard } from '@/components/motion/insight-card';
 import { NumberTicker } from '@/components/motion/number-ticker';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -11,10 +18,16 @@ import './style.css';
 
 const formatInteger = (value) => Math.round(Number(value || 0)).toLocaleString('pt-BR');
 
+const ROLE_LABELS = {
+  USER: 'USER (Operacional)',
+  ADMIN: 'ADMIN (Administrador)',
+};
+
 function Users() {
   const { user: currentUser } = useAuth();
   const { data: users = [], isLoading, isError } = useUsers();
 
+  const [searchTerm, setSearchTerm] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [confirmationProps, setConfirmationProps] = useState({ isOpen: false });
@@ -28,6 +41,7 @@ function Users() {
 
   const [editForm, setEditForm] = useState({
     name: '',
+    username: '',
     password: '',
     role: 'USER',
   });
@@ -46,10 +60,21 @@ function Users() {
     },
   });
 
+  const filteredUsers = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return users;
+    return users.filter(
+      (u) =>
+        u.name?.toLowerCase().includes(term) ||
+        u.username?.toLowerCase().includes(term)
+    );
+  }, [users, searchTerm]);
+
   const handleOpenEdit = (u) => {
     setEditingUser(u);
     setEditForm({
       name: u.name || '',
+      username: u.username || '',
       password: '',
       role: u.role || 'USER',
     });
@@ -57,18 +82,24 @@ function Users() {
 
   const handleCreateSubmit = (e) => {
     e.preventDefault();
-    createUserMutation.mutate(createForm);
+    createUserMutation.mutate({
+      name: createForm.name.trim(),
+      username: createForm.username.trim(),
+      password: createForm.password,
+      role: createForm.role,
+    });
   };
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
     if (!editingUser) return;
-    const payload = {
-      name: editForm.name,
+    updateUserMutation.mutate({
+      id: editingUser.id,
+      name: editForm.name.trim(),
+      username: editForm.username.trim(),
+      password: editForm.password.trim() || null,
       role: editForm.role,
-      password: editForm.password || null,
-    };
-    updateUserMutation.mutate({ id: editingUser.id, userData: payload });
+    });
   };
 
   const handleDeleteRequest = (u) => {
@@ -128,6 +159,30 @@ function Users() {
         />
       </div>
 
+      {/* Search Bar */}
+      <div className="rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-3.5 sm:p-4">
+        <div className="ledger-search-wrapper max-w-md">
+          <Search className="ledger-search-icon" />
+          <input
+            type="text"
+            placeholder="Buscar por nome ou login..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="ledger-search-input"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              aria-label="Limpar busca de usuários"
+              className="ledger-search-clear"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Users Table / Cards */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] py-16 text-sm text-[var(--ledger-ink-subtle)]">
@@ -137,6 +192,13 @@ function Users() {
       ) : isError ? (
         <div className="rounded-2xl border border-red-200 bg-[var(--ledger-danger-soft)] p-5 text-sm font-medium text-[var(--ledger-danger)]">
           Erro ao carregar usuários.
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-6 py-12 text-center">
+          <UsersIcon className="size-7 text-[var(--ledger-ink-subtle)]" />
+          <p className="text-sm font-semibold text-[var(--ledger-ink)]">
+            Nenhum usuário encontrado.
+          </p>
         </div>
       ) : (
         <>
@@ -153,7 +215,7 @@ function Users() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--ledger-border)]">
-                  {users.map((u) => {
+                  {filteredUsers.map((u) => {
                     const isSelf = u.username === currentUser?.username;
                     return (
                       <tr
@@ -204,7 +266,7 @@ function Users() {
 
           {/* Mobile Cards */}
           <div className="space-y-3 md:hidden">
-            {users.map((u) => {
+            {filteredUsers.map((u) => {
               const isSelf = u.username === currentUser?.username;
               return (
                 <div
@@ -237,7 +299,7 @@ function Users() {
                   <button
                     type="button"
                     onClick={() => handleOpenEdit(u)}
-                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] px-3 text-xs font-semibold text-[var(--ledger-ink)]"
+                    className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] px-3.5 text-xs font-semibold text-[var(--ledger-ink)] active:scale-95"
                   >
                     <Pencil className="size-3.5" />
                     <span>Editar</span>
@@ -282,15 +344,20 @@ function Users() {
 
             <div className="ledger-field">
               <label htmlFor="create-role">Perfil de Acesso</label>
-              <select
-                id="create-role"
-                className="ledger-select"
+              <Select
                 value={createForm.role}
-                onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
+                onValueChange={(val) =>
+                  setCreateForm((p) => ({ ...p, role: val ? String(val) : 'USER' }))
+                }
               >
-                <option value="USER">USER (Operacional)</option>
-                <option value="ADMIN">ADMIN (Administrador)</option>
-              </select>
+                <SelectTrigger id="create-role" className="w-full">
+                  <SelectValue>{(val) => ROLE_LABELS[val] || val}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USER">{ROLE_LABELS.USER}</SelectItem>
+                  <SelectItem value="ADMIN">{ROLE_LABELS.ADMIN}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -334,31 +401,50 @@ function Users() {
         title={`Editar Usuário · @${editingUser?.username || ''}`}
       >
         <form className="ledger-form" onSubmit={handleEditSubmit}>
-          <div className="ledger-field">
-            <label htmlFor="edit-name">Nome Completo</label>
-            <input
-              id="edit-name"
-              className="ledger-input"
-              type="text"
-              value={editForm.name}
-              onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
-              required
-            />
+          <div className="ledger-form-row">
+            <div className="ledger-field">
+              <label htmlFor="edit-name">Nome Completo</label>
+              <input
+                id="edit-name"
+                className="ledger-input"
+                type="text"
+                value={editForm.name}
+                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                required
+              />
+            </div>
+
+            <div className="ledger-field">
+              <label htmlFor="edit-username">Login (Usuário)</label>
+              <input
+                id="edit-username"
+                className="ledger-input mono"
+                type="text"
+                value={editForm.username}
+                onChange={(e) => setEditForm((p) => ({ ...p, username: e.target.value }))}
+                required
+              />
+            </div>
           </div>
 
           <div className="ledger-form-row">
             <div className="ledger-field">
               <label htmlFor="edit-role">Perfil</label>
-              <select
-                id="edit-role"
-                className="ledger-select"
+              <Select
                 value={editForm.role}
-                onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
                 disabled={editingUser?.username === currentUser?.username}
+                onValueChange={(val) =>
+                  setEditForm((p) => ({ ...p, role: val ? String(val) : 'USER' }))
+                }
               >
-                <option value="USER">USER (Operacional)</option>
-                <option value="ADMIN">ADMIN (Administrador)</option>
-              </select>
+                <SelectTrigger id="edit-role" className="w-full">
+                  <SelectValue>{(val) => ROLE_LABELS[val] || val}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USER">{ROLE_LABELS.USER}</SelectItem>
+                  <SelectItem value="ADMIN">{ROLE_LABELS.ADMIN}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="ledger-field">

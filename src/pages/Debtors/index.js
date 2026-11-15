@@ -5,11 +5,13 @@ import {
   CalendarClock,
   CheckCheck,
   Coins,
+  FileText,
   Pencil,
   Plus,
   Search,
   Users,
   Wallet,
+  X,
 } from 'lucide-react';
 import { useDebtors, useDebtorMutations } from '../../hooks/useDebtors';
 import { InsightCard } from '@/components/motion/insight-card';
@@ -28,17 +30,11 @@ const formatCurrency = (value) =>
 
 const formatInteger = (value) => Math.round(Number(value || 0)).toLocaleString('pt-BR');
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  const [year, month, day] = dateString.split('T')[0].split('-');
-  return `${day}/${month}/${year}`;
-};
-
-const isOverdue = (dateString) => {
-  if (!dateString) return false;
-  const isoDay = dateString.split('T')[0];
-  const todayIso = new Date().toISOString().split('T')[0];
-  return isoDay < todayIso;
+const formatEntryDate = (dateString) => {
+  if (!dateString) return '—';
+  const parsed = new Date(dateString);
+  if (Number.isNaN(parsed.getTime())) return String(dateString);
+  return parsed.toLocaleDateString('pt-BR');
 };
 
 function Debtors() {
@@ -76,7 +72,10 @@ function Debtors() {
   });
 
   const handleSaveChanges = (updatedData) => {
-    updateDebtorMutation.mutate({ id: editingDebtor.id, debtorData: updatedData });
+    updateDebtorMutation.mutate({
+      ...editingDebtor,
+      ...updatedData,
+    });
   };
 
   const handleConfirmPayment = (debtor) => {
@@ -94,17 +93,9 @@ function Debtors() {
   const handlePartialPaySubmit = (e) => {
     e.preventDefault();
     const amount = parseFloat(partialAmount);
-    if (!amount || amount <= 0) return;
+    if (!amount || amount <= 0 || !payingDebtor) return;
 
-    partialPayMutation.mutate(
-      { id: payingDebtor.id, amount },
-      {
-        onSuccess: () => {
-          setPayingDebtor(null);
-          setPartialAmount('');
-        },
-      }
-    );
+    partialPayMutation.mutate({ id: payingDebtor.id, amount });
   };
 
   return (
@@ -119,7 +110,7 @@ function Debtors() {
             Caderneta de Clientes
           </h2>
           <p className="mt-1 text-sm text-[var(--ledger-ink-muted)]">
-            Acompanhe prazos de vencimento, registre abatimentos parciais e quite saldos em aberto.
+            Consulte os itens anotados, registre abatimentos parciais e quite saldos em aberto.
           </p>
         </div>
 
@@ -162,17 +153,27 @@ function Debtors() {
         />
       </div>
 
-      {/* Search Bar */}
+      {/* Search Bar (Fixed icon spacing + Clear button) */}
       <div className="rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-3.5 sm:p-4">
-        <div className="relative max-w-md">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--ledger-ink-subtle)]" />
+        <div className="ledger-search-wrapper max-w-md">
+          <Search className="ledger-search-icon" />
           <input
             type="text"
             placeholder="Buscar cliente por nome..."
             value={debtorSearchTerm}
             onChange={(e) => setDebtorSearchTerm(e.target.value)}
-            className="ledger-input pl-9"
+            className="ledger-search-input"
           />
+          {debtorSearchTerm && (
+            <button
+              type="button"
+              onClick={() => setDebtorSearchTerm('')}
+              aria-label="Limpar busca de cliente"
+              className="ledger-search-clear"
+            >
+              <X className="size-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -217,142 +218,150 @@ function Debtors() {
                 <thead>
                   <tr className="border-b border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[0.7rem] font-bold uppercase tracking-wider text-[var(--ledger-ink-subtle)]">
                     <th className="px-5 py-3.5">Cliente</th>
-                    <th className="px-5 py-3.5">Vencimento</th>
+                    <th className="px-5 py-3.5">Descrição</th>
+                    <th className="px-5 py-3.5">Data de Entrada</th>
                     <th className="px-5 py-3.5 text-right">Saldo Devido</th>
                     <th className="px-5 py-3.5 text-right">Operações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--ledger-border)]">
-                  {debtors.map((debtor) => {
-                    const overdue = isOverdue(debtor.dueDate);
-                    return (
-                      <tr
-                        key={debtor.id}
-                        className="transition-colors hover:bg-[var(--ledger-surface-hover)]"
-                      >
-                        <td className="px-5 py-3.5">
-                          <span className="font-bold text-[var(--ledger-ink)]">{debtor.name}</span>
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono-tabular text-xs font-medium text-[var(--ledger-ink-muted)]">
-                              {formatDate(debtor.dueDate)}
-                            </span>
-                            {overdue ? (
-                              <span className="inline-flex items-center rounded-md border border-red-200 bg-[var(--ledger-danger-soft)] px-2 py-0.5 text-[0.68rem] font-semibold uppercase tracking-wide text-[var(--ledger-danger)]">
-                                Vencido
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center rounded-md border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-2 py-0.5 text-[0.68rem] font-semibold uppercase tracking-wide text-[var(--ledger-ink-muted)]">
-                                Em dia
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="font-mono-tabular px-5 py-3.5 text-right text-[0.95rem] font-bold text-[var(--ledger-ink)]">
-                          {formatCurrency(debtor.value)}
-                        </td>
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setEditingDebtor(debtor)}
-                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-2.5 text-xs font-semibold text-[var(--ledger-ink-muted)] transition-colors hover:bg-[var(--ledger-surface-muted)] hover:text-[var(--ledger-ink)]"
-                            >
-                              <Pencil className="size-3.5" />
-                              <span>Editar</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPayingDebtor(debtor);
-                                setPartialAmount('');
-                              }}
-                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-300 bg-[var(--ledger-amber-soft)] px-2.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-200/80"
-                            >
-                              <Coins className="size-3.5" />
-                              <span>Abater</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleConfirmPayment(debtor)}
-                              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--ledger-accent)] px-3 text-xs font-semibold text-white transition-colors hover:bg-[var(--ledger-accent-hover)]"
-                            >
-                              <CheckCheck className="size-3.5" />
-                              <span>Quitar</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {debtors.map((debtor) => (
+                    <tr
+                      key={debtor.id}
+                      className="transition-colors hover:bg-[var(--ledger-surface-hover)]"
+                    >
+                      <td className="px-5 py-3.5 align-top">
+                        <span className="font-bold text-[var(--ledger-ink)]">{debtor.name}</span>
+                      </td>
+                      <td className="max-w-sm px-5 py-3.5 align-top">
+                        {debtor.description ? (
+                          <p className="text-[0.84rem] leading-snug text-[var(--ledger-ink-muted)]">
+                            {debtor.description}
+                          </p>
+                        ) : (
+                          <span className="text-xs italic text-[var(--ledger-ink-subtle)]">
+                            Sem descrição informada
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 align-top">
+                        <span className="font-mono-tabular text-xs font-medium text-[var(--ledger-ink-muted)]">
+                          {formatEntryDate(debtor.date)}
+                        </span>
+                      </td>
+                      <td className="font-mono-tabular px-5 py-3.5 text-right align-top text-[0.95rem] font-bold text-[var(--ledger-ink)]">
+                        {formatCurrency(debtor.value)}
+                      </td>
+                      <td className="px-5 py-3.5 align-top">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingDebtor(debtor)}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-2.5 text-xs font-semibold text-[var(--ledger-ink-muted)] transition-colors hover:bg-[var(--ledger-surface-muted)] hover:text-[var(--ledger-ink)]"
+                          >
+                            <Pencil className="size-3.5" />
+                            <span>Editar</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPayingDebtor(debtor);
+                              setPartialAmount('');
+                            }}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-300 bg-[var(--ledger-amber-soft)] px-2.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-200/80"
+                          >
+                            <Coins className="size-3.5" />
+                            <span>Abater</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleConfirmPayment(debtor)}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--ledger-accent)] px-3 text-xs font-semibold text-white transition-colors hover:bg-[var(--ledger-accent-hover)]"
+                          >
+                            <CheckCheck className="size-3.5" />
+                            <span>Quitar</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Mobile Ledger Cards */}
+          {/* Mobile Ledger Ticket Cards (Android & iOS friendly) */}
           <div className="space-y-3 md:hidden">
-            {debtors.map((debtor) => {
-              const overdue = isOverdue(debtor.dueDate);
-              return (
-                <article
-                  key={debtor.id}
-                  className="rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-base font-bold text-[var(--ledger-ink)]">
-                        {debtor.name}
-                      </h3>
-                      <div className="mt-1 flex items-center gap-1.5 text-xs text-[var(--ledger-ink-muted)]">
-                        <CalendarClock className="size-3.5 text-[var(--ledger-ink-subtle)]" />
-                        <span className="font-mono-tabular">{formatDate(debtor.dueDate)}</span>
-                        {overdue && (
-                          <span className="rounded bg-[var(--ledger-danger-soft)] px-1.5 py-0.5 text-[0.65rem] font-bold uppercase text-[var(--ledger-danger)]">
-                            Vencido
-                          </span>
-                        )}
-                      </div>
+            {debtors.map((debtor) => (
+              <article
+                key={debtor.id}
+                className="rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-4 shadow-2xs"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-bold text-[var(--ledger-ink)]">
+                      {debtor.name}
+                    </h3>
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-[var(--ledger-ink-subtle)]">
+                      <CalendarClock className="size-3.5" />
+                      <span>Entrada em</span>
+                      <span className="font-mono-tabular font-medium text-[var(--ledger-ink-muted)]">
+                        {formatEntryDate(debtor.date)}
+                      </span>
                     </div>
-
-                    <span className="font-mono-tabular shrink-0 text-base font-extrabold text-[var(--ledger-ink)]">
-                      {formatCurrency(debtor.value)}
-                    </span>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-3 gap-2 border-t border-[var(--ledger-border)] pt-3">
-                    <button
-                      type="button"
-                      onClick={() => setEditingDebtor(debtor)}
-                      className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] text-xs font-semibold text-[var(--ledger-ink)]"
-                    >
-                      <Pencil className="size-3.5" />
-                      <span>Editar</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPayingDebtor(debtor);
-                        setPartialAmount('');
-                      }}
-                      className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-amber-300 bg-[var(--ledger-amber-soft)] text-xs font-semibold text-amber-900"
-                    >
-                      <Coins className="size-3.5" />
-                      <span>Abater</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleConfirmPayment(debtor)}
-                      className="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-[var(--ledger-accent)] text-xs font-semibold text-white"
-                    >
-                      <CheckCheck className="size-3.5" />
-                      <span>Quitar</span>
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
+                  <span className="font-mono-tabular shrink-0 rounded-lg bg-[var(--ledger-bg)] px-2.5 py-1 text-base font-extrabold text-[var(--ledger-ink)]">
+                    {formatCurrency(debtor.value)}
+                  </span>
+                </div>
+
+                {/* Description Block */}
+                <div className="mt-3 flex items-start gap-2 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)]/70 px-3 py-2.5">
+                  <FileText className="mt-0.5 size-3.5 shrink-0 text-[var(--ledger-ink-subtle)]" />
+                  <p className="text-[0.83rem] leading-relaxed text-[var(--ledger-ink-muted)]">
+                    {debtor.description ? (
+                      debtor.description
+                    ) : (
+                      <span className="italic text-[var(--ledger-ink-subtle)]">
+                        Sem descrição registrada
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                {/* Thumb-friendly 40px+ Action Strip */}
+                <div className="mt-3.5 grid grid-cols-3 gap-2 border-t border-[var(--ledger-border)] pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditingDebtor(debtor)}
+                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] text-xs font-semibold text-[var(--ledger-ink)] active:scale-95"
+                  >
+                    <Pencil className="size-3.5" />
+                    <span>Editar</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPayingDebtor(debtor);
+                      setPartialAmount('');
+                    }}
+                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-[var(--ledger-amber-soft)] text-xs font-semibold text-amber-900 active:scale-95"
+                  >
+                    <Coins className="size-3.5" />
+                    <span>Abater</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmPayment(debtor)}
+                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--ledger-accent)] text-xs font-semibold text-white active:scale-95"
+                  >
+                    <CheckCheck className="size-3.5" />
+                    <span>Quitar</span>
+                  </button>
+                </div>
+              </article>
+            ))}
           </div>
         </>
       )}
@@ -375,7 +384,12 @@ function Debtors() {
               <span className="text-[var(--ledger-ink-muted)]">Cliente</span>
               <strong className="text-[var(--ledger-ink)]">{payingDebtor?.name}</strong>
             </div>
-            <div className="mt-1.5 flex items-center justify-between gap-2 text-sm">
+            {payingDebtor?.description && (
+              <div className="mt-1.5 text-xs text-[var(--ledger-ink-subtle)]">
+                {payingDebtor.description}
+              </div>
+            )}
+            <div className="mt-2 flex items-center justify-between gap-2 border-t border-[var(--ledger-border)] pt-2 text-sm">
               <span className="text-[var(--ledger-ink-muted)]">Saldo atual</span>
               <strong className="font-mono-tabular text-[var(--ledger-ink)]">
                 {formatCurrency(payingDebtor?.value)}
@@ -391,6 +405,7 @@ function Debtors() {
                 id="partialAmount"
                 className="ledger-input mono"
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 min="0.01"
                 max={payingDebtor?.value}

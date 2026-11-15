@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 function AddProductForm({ categories = [], onSave }) {
   const [name, setName] = useState('');
@@ -11,13 +18,13 @@ function AddProductForm({ categories = [], onSave }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name.trim() || !categoryId || !qtd) {
+    if (!name.trim() || !categoryId || qtd === '') {
       toast.error('Por favor, preencha nome, categoria e quantidade.');
       return;
     }
 
     onSave({
-      name,
+      name: name.trim(),
       categoryId: parseInt(categoryId, 10),
       qtd: parseInt(qtd, 10),
       costPrice: parseFloat(costPrice) || 0,
@@ -25,6 +32,8 @@ function AddProductForm({ categories = [], onSave }) {
       minQuantity: parseInt(minQuantity, 10) || 0,
     });
   };
+
+  const selectedCategoryName = categories.find((c) => String(c.id) === String(categoryId))?.name;
 
   return (
     <form className="ledger-form" onSubmit={handleSubmit}>
@@ -36,7 +45,7 @@ function AddProductForm({ categories = [], onSave }) {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Ex: Camisa Polo P"
+          placeholder="Ex: Coca-Cola 2L"
           required
           autoFocus
         />
@@ -44,22 +53,23 @@ function AddProductForm({ categories = [], onSave }) {
 
       <div className="ledger-field">
         <label htmlFor="add-product-category">Categoria</label>
-        <select
-          id="add-product-category"
-          className="ledger-select"
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          required
+        <Select
+          value={categoryId || null}
+          onValueChange={(val) => setCategoryId(val ? String(val) : '')}
         >
-          <option value="" disabled>
-            Selecione uma categoria...
-          </option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="add-product-category" className="w-full">
+            <SelectValue placeholder="Selecione uma categoria...">
+              {() => selectedCategoryName || 'Selecione uma categoria...'}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={String(cat.id)}>
+                {cat.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="ledger-form-row">
@@ -69,6 +79,7 @@ function AddProductForm({ categories = [], onSave }) {
             id="add-product-qtd"
             className="ledger-input mono"
             type="number"
+            inputMode="numeric"
             min="0"
             value={qtd}
             onChange={(e) => setQtd(e.target.value)}
@@ -83,10 +94,11 @@ function AddProductForm({ categories = [], onSave }) {
             id="add-product-min"
             className="ledger-input mono"
             type="number"
+            inputMode="numeric"
             min="0"
             value={minQuantity}
             onChange={(e) => setMinQuantity(e.target.value)}
-            placeholder="0"
+            placeholder="5"
           />
         </div>
       </div>
@@ -100,6 +112,7 @@ function AddProductForm({ categories = [], onSave }) {
               id="add-product-cost"
               className="ledger-input mono"
               type="number"
+              inputMode="decimal"
               step="0.01"
               min="0"
               value={costPrice}
@@ -117,6 +130,7 @@ function AddProductForm({ categories = [], onSave }) {
               id="add-product-sale"
               className="ledger-input mono"
               type="number"
+              inputMode="decimal"
               step="0.01"
               min="0"
               value={salePrice}

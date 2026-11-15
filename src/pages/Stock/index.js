@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
   Boxes,
@@ -12,6 +12,7 @@ import {
   Plus,
   Search,
   Wallet,
+  X,
 } from 'lucide-react';
 import { useProducts, useProductMutations } from '../../hooks/useProducts';
 import { useCategories } from '../../hooks/useCategories';
@@ -19,6 +20,13 @@ import { InsightCard } from '@/components/motion/insight-card';
 import { NumberTicker } from '@/components/motion/number-ticker';
 import { StatusBadge } from '@/components/spaceui/status-badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import EditProductModal from '../../components/EditProductModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -33,6 +41,7 @@ const formatCurrency = (value) =>
 const formatInteger = (value) => Math.round(Number(value || 0)).toLocaleString('pt-BR');
 
 function getProductStatusMeta(product) {
+  const minQty = product.minQuantity ?? 5;
   if (product.qtd === 0) {
     return {
       status: 'error',
@@ -40,7 +49,7 @@ function getProductStatusMeta(product) {
       badgeTone: 'bg-[var(--ledger-danger-soft)] text-[var(--ledger-danger)] border-red-200',
     };
   }
-  if (product.minQuantity > 0 && product.qtd <= product.minQuantity) {
+  if (minQty > 0 && product.qtd <= minQty) {
     return {
       status: 'warning',
       label: 'Estoque Baixo',
@@ -64,12 +73,13 @@ function getMarginPercent(costPrice, salePrice) {
 function Stock() {
   const outletContext = useOutletContext() || {};
   const { summary, openModal, openMovements } = outletContext;
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [editingProduct, setEditingProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [stockFilter, setStockFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState(() => searchParams.get('category') || '');
   const [viewMode, setViewMode] = useState('grid');
 
   const [confirmationProps, setConfirmationProps] = useState({
@@ -80,11 +90,29 @@ function Stock() {
   });
 
   useEffect(() => {
+    const paramCat = searchParams.get('category') || '';
+    if (paramCat !== categoryFilter) {
+      setCategoryFilter(paramCat);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  const handleCategoryChange = (value) => {
+    const nextCat = value === 'all' || !value ? '' : String(value);
+    setCategoryFilter(nextCat);
+    if (nextCat) {
+      setSearchParams({ category: nextCat }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  };
 
   const { data: products = [], isLoading, isError } = useProducts({
     searchTerm: debouncedSearch,
@@ -134,6 +162,10 @@ function Stock() {
     { key: 'out_of_stock', label: 'Sem Estoque' },
   ];
 
+  const selectedCategoryName = categoryFilter
+    ? categories.find((c) => String(c.id) === String(categoryFilter))?.name
+    : null;
+
   return (
     <div className="space-y-6">
       {/* Contextual Editorial Header */}
@@ -170,7 +202,7 @@ function Stock() {
         </div>
       </div>
 
-      {/* 4 Stock KPI Cards (EaseUI InsightCard + NumberTicker) */}
+      {/* 4 Stock KPI Cards */}
       <div className="easeui-theme grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         <InsightCard
           label="Total de Produtos"
@@ -223,31 +255,46 @@ function Stock() {
       {/* Filter Toolbar + View Mode Switcher */}
       <div className="rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-3.5 sm:p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1 max-w-md">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--ledger-ink-subtle)]" />
+          <div className="flex flex-1 min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="ledger-search-wrapper min-w-0 flex-1 sm:max-w-md">
+              <Search className="ledger-search-icon" />
               <input
                 type="text"
                 placeholder="Buscar produto por nome..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="ledger-input pl-9"
+                className="ledger-search-input"
               />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  aria-label="Limpar busca"
+                  className="ledger-search-clear"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
             </div>
 
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              aria-label="Filtrar por categoria"
-              className="ledger-select sm:w-52"
-            >
-              <option value="">Todas as categorias</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+            <Select value={categoryFilter || 'all'} onValueChange={handleCategoryChange}>
+              <SelectTrigger
+                aria-label="Filtrar por categoria"
+                className="w-full sm:w-56 shrink-0"
+              >
+                <SelectValue>
+                  {() => selectedCategoryName || 'Todas as categorias'}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as categorias</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={String(cat.id)}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -260,7 +307,7 @@ function Stock() {
                     key={chip.key}
                     type="button"
                     onClick={() => setStockFilter(chip.key)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    className={`rounded-lg px-3 py-2 sm:py-1.5 text-xs font-semibold transition-colors ${
                       active
                         ? 'bg-[var(--ledger-sidebar-bg)] text-white'
                         : 'border border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[var(--ledger-ink-muted)] hover:bg-[var(--ledger-surface-muted)] hover:text-[var(--ledger-ink)]'
@@ -333,6 +380,8 @@ function Stock() {
           {products.map((product) => {
             const statusMeta = getProductStatusMeta(product);
             const margin = getMarginPercent(product.costPrice, product.salePrice);
+            const categoryLabel =
+              product.categoryName || product.category?.name || 'Sem Categoria';
 
             return (
               <article
@@ -340,10 +389,9 @@ function Stock() {
                 className="group flex flex-col justify-between rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-4 transition-all hover:border-[var(--ledger-border-strong)] hover:shadow-sm"
               >
                 <div>
-                  {/* Card Top Meta Row */}
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate rounded-md border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-2 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wider text-[var(--ledger-ink-muted)]">
-                      {product.category?.name || 'Sem Categoria'}
+                      {categoryLabel}
                     </span>
 
                     <div className="spaceui-theme shrink-0">
@@ -358,12 +406,10 @@ function Stock() {
                     </div>
                   </div>
 
-                  {/* Product Title */}
                   <h3 className="mt-3 line-clamp-2 text-[1.02rem] font-bold leading-snug text-[var(--ledger-ink)]">
                     {product.name}
                   </h3>
 
-                  {/* Pricing & Spec Strip */}
                   <div className="mt-3.5 grid grid-cols-3 gap-2 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)]/70 p-2.5">
                     <div>
                       <span className="block text-[0.66rem] font-semibold uppercase tracking-wider text-[var(--ledger-ink-subtle)]">
@@ -390,13 +436,13 @@ function Stock() {
                       <span className="font-mono-tabular mt-0.5 block text-xs font-semibold text-[var(--ledger-accent)]">
                         {margin !== null
                           ? `${margin >= 0 ? '+' : ''}${margin.toFixed(0)}%`
-                          : `${product.minQuantity || 0} un.`}
+                          : `${product.minQuantity ?? 5} un.`}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Bottom Stepper + Edit Strip */}
+                {/* Touch-friendly Stepper + Edit Strip */}
                 <div className="mt-4 flex items-center justify-between gap-3 border-t border-[var(--ledger-border)] pt-3">
                   <div className="flex items-center gap-1.5">
                     <button
@@ -404,12 +450,12 @@ function Stock() {
                       onClick={() => handleQuantityChange(product, -1)}
                       disabled={product.qtd <= 0}
                       aria-label={`Diminuir quantidade de ${product.name}`}
-                      className="flex size-8 items-center justify-center rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] text-[var(--ledger-ink)] transition-colors hover:bg-[var(--ledger-surface-muted)] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="flex size-10 sm:size-8 items-center justify-center rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] text-[var(--ledger-ink)] transition-colors hover:bg-[var(--ledger-surface-muted)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      <Minus className="size-3.5" />
+                      <Minus className="size-4 sm:size-3.5" />
                     </button>
 
-                    <div className="min-w-[4.5rem] rounded-lg border border-[var(--ledger-border)] bg-[var(--ledger-surface)] px-2.5 py-1 text-center">
+                    <div className="min-w-[4.5rem] rounded-lg border border-[var(--ledger-border)] bg-[var(--ledger-surface)] px-2.5 py-1.5 sm:py-1 text-center">
                       <span className="font-mono-tabular text-sm font-bold text-[var(--ledger-ink)]">
                         {product.qtd}
                       </span>
@@ -422,9 +468,9 @@ function Stock() {
                       type="button"
                       onClick={() => handleQuantityChange(product, 1)}
                       aria-label={`Aumentar quantidade de ${product.name}`}
-                      className="flex size-8 items-center justify-center rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] text-[var(--ledger-ink)] transition-colors hover:border-[var(--ledger-accent)] hover:bg-[var(--ledger-accent-soft)] hover:text-[var(--ledger-accent)]"
+                      className="flex size-10 sm:size-8 items-center justify-center rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] text-[var(--ledger-ink)] transition-colors hover:border-[var(--ledger-accent)] hover:bg-[var(--ledger-accent-soft)] hover:text-[var(--ledger-accent)] active:scale-95"
                     >
-                      <Plus className="size-3.5" />
+                      <Plus className="size-4 sm:size-3.5" />
                     </button>
                   </div>
 
@@ -437,7 +483,7 @@ function Stock() {
                     <button
                       type="button"
                       onClick={() => setEditingProduct(product)}
-                      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-2.5 text-xs font-semibold text-[var(--ledger-ink-muted)] transition-colors hover:bg-[var(--ledger-surface-muted)] hover:text-[var(--ledger-ink)]"
+                      className="inline-flex h-10 sm:h-8 items-center gap-1.5 rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-3 sm:px-2.5 text-xs font-semibold text-[var(--ledger-ink-muted)] transition-colors hover:bg-[var(--ledger-surface-muted)] hover:text-[var(--ledger-ink)]"
                     >
                       <Pencil className="size-3.5" />
                       <span>Editar</span>
@@ -467,6 +513,9 @@ function Stock() {
               <tbody className="divide-y divide-[var(--ledger-border)]">
                 {products.map((product) => {
                   const statusMeta = getProductStatusMeta(product);
+                  const categoryLabel =
+                    product.categoryName || product.category?.name || 'Sem Categoria';
+
                   return (
                     <tr
                       key={product.id}
@@ -475,7 +524,7 @@ function Stock() {
                       <td className="px-4 py-3">
                         <div className="font-semibold text-[var(--ledger-ink)]">{product.name}</div>
                         <div className="text-xs text-[var(--ledger-ink-subtle)]">
-                          {product.category?.name || 'Sem Categoria'}
+                          {categoryLabel}
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -497,7 +546,7 @@ function Stock() {
                         {formatCurrency(product.salePrice)}
                       </td>
                       <td className="font-mono-tabular px-4 py-3 text-center text-xs text-[var(--ledger-ink-subtle)]">
-                        {product.minQuantity || 0}
+                        {product.minQuantity ?? 5}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-1.5">
@@ -506,7 +555,7 @@ function Stock() {
                             onClick={() => handleQuantityChange(product, -1)}
                             disabled={product.qtd <= 0}
                             aria-label={`Diminuir quantidade de ${product.name}`}
-                            className="flex size-7 items-center justify-center rounded-md border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] text-[var(--ledger-ink)] hover:bg-[var(--ledger-surface-muted)] disabled:opacity-40"
+                            className="flex size-8 sm:size-7 items-center justify-center rounded-md border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] text-[var(--ledger-ink)] hover:bg-[var(--ledger-surface-muted)] disabled:opacity-40"
                           >
                             <Minus className="size-3" />
                           </button>
@@ -517,7 +566,7 @@ function Stock() {
                             type="button"
                             onClick={() => handleQuantityChange(product, 1)}
                             aria-label={`Aumentar quantidade de ${product.name}`}
-                            className="flex size-7 items-center justify-center rounded-md border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] text-[var(--ledger-ink)] hover:border-[var(--ledger-accent)] hover:bg-[var(--ledger-accent-soft)] hover:text-[var(--ledger-accent)]"
+                            className="flex size-8 sm:size-7 items-center justify-center rounded-md border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] text-[var(--ledger-ink)] hover:border-[var(--ledger-accent)] hover:bg-[var(--ledger-accent-soft)] hover:text-[var(--ledger-accent)]"
                           >
                             <Plus className="size-3" />
                           </button>
