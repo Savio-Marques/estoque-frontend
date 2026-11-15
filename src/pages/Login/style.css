@@ -76,6 +76,30 @@
   font-weight: 500;
 }
 
+.login-success {
+  color: #16a249;
+  background-color: #e6f9ed;
+  border: 1px solid #16a249;
+  border-radius: 6px;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.login-form .login-toggle-button {
+  background-color: transparent;
+  color: #0068f0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.5rem;
+  margin-bottom: 0;
+}
+
+.login-form .login-toggle-button:hover {
+  background-color: rgba(0, 104, 240, 0.08);
+}
+
 @media (min-width: 768px) {
   .login-container {
     background-color: #ccc;

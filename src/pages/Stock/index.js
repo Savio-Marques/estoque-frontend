@@ -1,19 +1,56 @@
-import React from 'react';
-import { useOutletContext } from 'react-router-dom';
+import React, { useState } from 'react';
 import { Package, CircleAlert, Plus, SquarePen, Minus, X, CheckCircle } from 'lucide-react';
+import EditProductModal from '../../components/EditProductModal';
+import ConfirmationModal from '../../components/ConfirmationModal';
+import useDebounce from '../../hooks/useDebounce';
+import { useProducts, useProductMutations } from '../../hooks/useProducts';
+import { useCategories } from '../../hooks/useCategories';
 import './style.css';
 
 export default function Stock() {
-  const context = useOutletContext() || {};
-  const {
-    products = [],
-    onEditProduct,
-    onQuantityChange,
-    searchTerm = '',
-    setSearchTerm,
-    stockFilter = 'all',
-    setStockFilter,
-  } = context;
+  const [searchTerm, setSearchTerm] = useState('');
+  const [stockFilter, setStockFilter] = useState('all');
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [confirmationProps, setConfirmationProps] = useState({ isOpen: false });
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  const { data: products = [], isLoading } = useProducts({
+    searchTerm: debouncedSearchTerm,
+    stockFilter,
+  });
+
+  const { data: categories = [] } = useCategories({
+    enabled: Boolean(editingProduct),
+  });
+
+  const { updateProductMutation, deleteProductMutation } = useProductMutations({
+    onUpdateSuccess: () => setEditingProduct(null),
+    onDeleteSuccess: () => {
+      setConfirmationProps({ isOpen: false });
+      setEditingProduct(null);
+    },
+  });
+
+  const handleQuantityChange = (product, amount) => {
+    const newQuantity = product.qtd + amount;
+    if (newQuantity < 0) return;
+
+    updateProductMutation.mutate({
+      ...product,
+      qtd: newQuantity,
+      _silentToast: true,
+    });
+  };
+
+  const requestDeleteConfirmation = (product) => {
+    setConfirmationProps({
+      isOpen: true,
+      title: 'Confirmar Exclusão',
+      message: `Tem certeza que deseja deletar o produto "${product.name}"? Esta ação não pode ser desfeita.`,
+      onConfirm: () => deleteProductMutation.mutate(product.id),
+    });
+  };
 
   const statusReturn = (quantity) => {
     if (quantity === 0) {
@@ -58,7 +95,9 @@ export default function Stock() {
           </select>
         </div>
 
-        {products.length > 0 ? (
+        {isLoading ? (
+          <p className="product-not-found">Carregando produtos...</p>
+        ) : products.length > 0 ? (
           <ul>
             {products.map((stock) => {
               const statusResult = statusReturn(stock.qtd);
@@ -84,16 +123,19 @@ export default function Stock() {
                     </div>
                     <div className="add-remove">
                       <button
+                        type="button"
                         className="product-add"
-                        onClick={() => onQuantityChange(stock.id, 1)}
+                        onClick={() => handleQuantityChange(stock, 1)}
                         aria-label={`Adicionar 1 unidade ao estoque de ${stock.name}`}
                       >
                         <Plus size={18} />
                         Adicionar
                       </button>
                       <button
+                        type="button"
                         className="product-remove"
-                        onClick={() => onQuantityChange(stock.id, -1)}
+                        onClick={() => handleQuantityChange(stock, -1)}
+                        disabled={stock.qtd <= 0}
                         aria-label={`Retirar 1 unidade do estoque de ${stock.name}`}
                       >
                         <Minus size={18} />
@@ -101,8 +143,9 @@ export default function Stock() {
                       </button>
                     </div>
                     <button
+                      type="button"
                       className="product-edit"
-                      onClick={() => onEditProduct(stock)}
+                      onClick={() => setEditingProduct(stock)}
                       aria-label={`Editar produto ${stock.name}`}
                     >
                       <SquarePen size={18} />
@@ -116,6 +159,25 @@ export default function Stock() {
         ) : (
           <p className="product-not-found">Nenhum produto encontrado com os filtros aplicados.</p>
         )}
+
+        {editingProduct && (
+          <EditProductModal
+            product={editingProduct}
+            categories={categories}
+            onSave={(data) => updateProductMutation.mutateAsync(data)}
+            onClose={() => setEditingProduct(null)}
+            onDeleteRequest={requestDeleteConfirmation}
+          />
+        )}
+
+        <ConfirmationModal
+          isOpen={confirmationProps.isOpen}
+          onClose={() => setConfirmationProps({ isOpen: false })}
+          onConfirm={confirmationProps.onConfirm}
+          title={confirmationProps.title}
+        >
+          {confirmationProps.message}
+        </ConfirmationModal>
       </div>
     </div>
   );

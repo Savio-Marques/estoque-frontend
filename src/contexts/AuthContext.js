@@ -28,6 +28,10 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
+  const register = async (name, username, password) => {
+    await api.post('auth/register', { name, username, password });
+  };
+
   const logout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('token');
@@ -42,6 +46,7 @@ export const AuthProvider = ({ children }) => {
         user,
         loading,
         login,
+        register,
         logout,
       }}
     >

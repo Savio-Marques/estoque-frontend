@@ -184,9 +184,14 @@
   background-color: #138d40;
 }
 
-.product-remove:hover {
+.product-remove:hover:not(:disabled) {
   background-color: #e6f2ff;
   color: #2474ee;
+}
+
+.product-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .product-not-found {

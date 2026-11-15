@@ -1,240 +1,55 @@
 import React, { useState } from 'react';
 import { Package, LogOut, CircleAlert, X, CircleDollarSign, Plus, Tag } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast, ToastContainer } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-import EditProductModal from '../../components/EditProductModal';
-import EditDebtorModal from '../../components/EditDebtorModal';
-import ConfirmationModal from '../../components/ConfirmationModal';
-import EditCategoryModal from '../../components/EditCategoryModal';
 import AddProductForm from '../../components/AddProductForm';
 import Modal from '../../components/Modal';
-import useDebounce from '../../hooks/useDebounce';
 import { useAuth } from '../../contexts/AuthContext';
-import api from '../../services/api';
+import { useProductSummary, useProductMutations } from '../../hooks/useProducts';
+import { useCategories, useCategoryMutations } from '../../hooks/useCategories';
+import { useDebtorMutations } from '../../hooks/useDebtors';
 import './style.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const queryClient = useQueryClient();
 
-  // Estados de busca e filtro
-  const [searchTerm, setSearchTerm] = useState('');
-  const [stockFilter, setStockFilter] = useState('all');
-  const [debtorSearchTerm, setDebtorSearchTerm] = useState('');
-
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
-  const debouncedDebtorSearchTerm = useDebounce(debtorSearchTerm, 500);
-
-  // Estados dos Modais
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [editingDebtor, setEditingDebtor] = useState(null);
-  const [editingCategory, setEditingCategory] = useState(null);
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
-  const [confirmationProps, setConfirmationProps] = useState({ isOpen: false });
 
-  // Estados de formulários simples
   const [categoryName, setCategoryName] = useState('');
   const [newDebtorClient, setNewDebtorClient] = useState('');
   const [newDebtorDescription, setNewDebtorDescription] = useState('');
   const [newDebtorValue, setNewDebtorValue] = useState('');
 
-  // ----------------------------------------------------
-  // QUERIES (React Query com Caching e Invalidacao isolada)
-  // ----------------------------------------------------
+  // Busca apenas o sumário no topo do Dashboard; categorias só são buscadas aqui se abrir o modal de novo produto
+  const { data: summary = { totalProduct: 0, lowStock: 0, noStock: 0 } } = useProductSummary();
+  const { data: categories = [] } = useCategories({ enabled: activeModal === 'addProduct' });
 
-  // 1. Produtos
-  const { data: products = [] } = useQuery({
-    queryKey: ['products', debouncedSearchTerm, stockFilter],
-    queryFn: async () => {
-      if (debouncedSearchTerm) {
-        const params = new URLSearchParams({ name: debouncedSearchTerm });
-        const res = await api.get(`/product/pesquisar?${params.toString()}`);
-        return res.data.content || res.data || [];
-      }
-      switch (stockFilter) {
-        case 'low': {
-          const res = await api.get('/product/lowStock');
-          return res.data.content || res.data || [];
-        }
-        case 'out_of_stock': {
-          const res = await api.get('/product/noStock');
-          return res.data.content || res.data || [];
-        }
-        default: {
-          const res = await api.get('/product');
-          return res.data.content || res.data || [];
-        }
-      }
-    },
-  });
-
-  // 2. Categorias
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      const res = await api.get('/category');
-      return res.data || [];
-    },
-  });
-
-  // 3. Resumo de Produtos
-  const { data: summary = { totalProduct: 0, lowStock: 0, noStock: 0 } } = useQuery({
-    queryKey: ['summary'],
-    queryFn: async () => {
-      const res = await api.get('/product/summary');
-      return res.data || { totalProduct: 0, lowStock: 0, noStock: 0 };
-    },
-  });
-
-  // 4. Devedores
-  const { data: debtorData = { debtorDTOList: [], summaryDebtorsDTO: { totalValue: 0, totalDebtors: 0 } } } = useQuery({
-    queryKey: ['debtors', debouncedDebtorSearchTerm],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (debouncedDebtorSearchTerm) params.append('name', debouncedDebtorSearchTerm);
-      const res = await api.get(`/debtor/pesquisar?${params.toString()}`);
-      return {
-        debtorDTOList: res.data.debtorDTOList || [],
-        summaryDebtorsDTO: res.data.summaryDebtorsDTO || { totalValue: 0, totalDebtors: 0 },
-      };
-    },
-  });
-
-  const debtors = debtorData.debtorDTOList;
-  const debtorSummary = debtorData.summaryDebtorsDTO;
-
-  // ----------------------------------------------------
-  // MUTATIONS
-  // ----------------------------------------------------
-
-  // Categoria
-  const addCategoryMutation = useMutation({
-    mutationFn: (name) => api.post('category', { name }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+  const { addCategoryMutation } = useCategoryMutations({
+    onAddSuccess: () => {
       setCategoryName('');
       setActiveModal(null);
-      toast.success('Categoria adicionada com sucesso!');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao adicionar categoria.');
     },
   });
 
-  const updateCategoryMutation = useMutation({
-    mutationFn: (updatedCat) => api.put(`/category/${updatedCat.id}`, updatedCat),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      setEditingCategory(null);
-      toast.success('Categoria atualizada com sucesso!');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao atualizar categoria.');
-    },
-  });
-
-  const deleteCategoryMutation = useMutation({
-    mutationFn: (id) => api.delete(`/category/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      setConfirmationProps({ isOpen: false });
-      toast.success('Categoria deletada com sucesso!');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao deletar categoria.');
-    },
-  });
-
-  // Produto
-  const addProductMutation = useMutation({
-    mutationFn: (productData) => api.post('/product', productData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['summary'] });
+  const { addProductMutation } = useProductMutations({
+    onAddSuccess: () => {
       setActiveModal(null);
-      toast.success('Produto adicionado com sucesso!');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao adicionar produto.');
     },
   });
 
-  const updateProductMutation = useMutation({
-    mutationFn: (updatedProduct) => api.put(`/product/${updatedProduct.id}`, updatedProduct),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['summary'] });
-      setEditingProduct(null);
-      toast.success('Produto atualizado com sucesso!');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao atualizar produto.');
-    },
-  });
-
-  const deleteProductMutation = useMutation({
-    mutationFn: (id) => api.delete(`/product/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['summary'] });
-      setConfirmationProps({ isOpen: false });
-      setEditingProduct(null);
-      toast.success('Produto deletado com sucesso!');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao deletar produto.');
-    },
-  });
-
-  // Devedor
-  const addDebtorMutation = useMutation({
-    mutationFn: (data) => api.post('/debtor', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['debtors'] });
+  const { addDebtorMutation } = useDebtorMutations({
+    onAddSuccess: () => {
       setActiveModal(null);
       setNewDebtorClient('');
       setNewDebtorDescription('');
       setNewDebtorValue('');
-      toast.success('Pagamento pendente adicionado com sucesso!');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao adicionar pagamento.');
     },
   });
 
-  const updateDebtorMutation = useMutation({
-    mutationFn: (updatedDebtor) => api.put(`/debtor/${updatedDebtor.id}`, updatedDebtor),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['debtors'] });
-      setEditingDebtor(null);
-      toast.success('Devedor atualizado com sucesso!');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao atualizar devedor.');
-    },
-  });
-
-  const markAsPaidMutation = useMutation({
-    mutationFn: (id) => api.delete(`/debtor/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['debtors'] });
-      setConfirmationProps({ isOpen: false });
-      toast.success('Pagamento debitado com sucesso!');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao debitar pagamento.');
-    },
-  });
-
-  // ----------------------------------------------------
-  // HANDLERS
-  // ----------------------------------------------------
   const handleOpenModal = (modalName) => {
     setActiveModal(modalName);
     setMenuOpen(false);
@@ -247,43 +62,6 @@ export default function Dashboard() {
   const handleLogout = () => {
     logout();
     navigate('/');
-  };
-
-  const handleQuantityChange = async (productId, amount) => {
-    const productToUpdate = products.find((p) => p.id === productId);
-    if (!productToUpdate) return;
-    const newQuantity = productToUpdate.qtd + amount;
-    if (newQuantity < 0) return;
-
-    updateProductMutation.mutate({ ...productToUpdate, qtd: newQuantity });
-  };
-
-  const requestDeleteCategoryConfirmation = (category) => {
-    setConfirmationProps({
-      isOpen: true,
-      title: 'Confirmar Exclusão',
-      message: `Tem certeza que deseja deletar a categoria "${category.name}"?`,
-      onConfirm: () => deleteCategoryMutation.mutate(category.id),
-    });
-  };
-
-  const requestDeleteConfirmation = (product) => {
-    setConfirmationProps({
-      isOpen: true,
-      title: 'Confirmar Exclusão',
-      message: `Tem certeza que deseja deletar o produto "${product.name}"? Esta ação não pode ser desfeita.`,
-      onConfirm: () => deleteProductMutation.mutate(product.id),
-    });
-  };
-
-  const requestMarkAsPaidConfirmation = (debtor) => {
-    setConfirmationProps({
-      isOpen: true,
-      title: 'Confirmar Pagamento',
-      message: `Você confirma o recebimento de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(debtor.value)} de ${debtor.name}?`,
-      onConfirm: () => markAsPaidMutation.mutate(debtor.id),
-      confirmButtonClass: 'confirm-button-paid',
-    });
   };
 
   return (
@@ -351,7 +129,7 @@ export default function Dashboard() {
         <nav>
           <div className="navigate-container">
             <NavLink to="/dashboard/categories" className="navigate-button">
-              <CircleDollarSign size={17} />
+              <Tag size={17} />
               Categorias
             </NavLink>
             <NavLink to="/dashboard/stock" className="navigate-button">
@@ -366,81 +144,24 @@ export default function Dashboard() {
         </nav>
 
         <div className="content-area">
-          <Outlet
-            context={{
-              products,
-              searchTerm,
-              setSearchTerm,
-              onEditProduct: (product) => setEditingProduct(product),
-              onQuantityChange: handleQuantityChange,
-              onAddProduct: (data) => addProductMutation.mutate(data),
-              onDeleteProduct: requestDeleteConfirmation,
-              categories,
-              onEditCategory: (cat) => setEditingCategory(cat),
-              onDeleteCategory: requestDeleteCategoryConfirmation,
-              debtors,
-              debtorSummary,
-              debtorSearchTerm,
-              setDebtorSearchTerm,
-              onEditDebtor: (debtor) => setEditingDebtor(debtor),
-              onRequestMarkAsPaid: requestMarkAsPaidConfirmation,
-              stockFilter,
-              setStockFilter,
-            }}
-          />
-
-          {editingProduct && (
-            <EditProductModal
-              product={editingProduct}
-              categories={categories}
-              onSave={(data) => updateProductMutation.mutate(data)}
-              onClose={() => setEditingProduct(null)}
-              onDeleteRequest={requestDeleteConfirmation}
-            />
-          )}
-
-          <ConfirmationModal
-            isOpen={confirmationProps.isOpen}
-            onClose={() => setConfirmationProps({ isOpen: false })}
-            onConfirm={confirmationProps.onConfirm}
-            title={confirmationProps.title}
-            confirmButtonClass={confirmationProps.confirmButtonClass}
-          >
-            {confirmationProps.message}
-          </ConfirmationModal>
-
-          {editingDebtor && (
-            <EditDebtorModal
-              debtor={editingDebtor}
-              onSave={(data) => updateDebtorMutation.mutate(data)}
-              onClose={() => setEditingDebtor(null)}
-            />
-          )}
-
-          {editingCategory && (
-            <EditCategoryModal
-              category={editingCategory}
-              onSave={(data) => updateCategoryMutation.mutate(data)}
-              onClose={() => setEditingCategory(null)}
-            />
-          )}
+          <Outlet />
 
           <div className="fab-container">
             {isMenuOpen && (
               <div className="fab-options">
-                <button onClick={() => handleOpenModal('addCategory')}>
+                <button type="button" onClick={() => handleOpenModal('addCategory')}>
                   Cadastro de categorias
                   <div className="fab-icon-wrapper">
                     <Tag size={20} />
                   </div>
                 </button>
-                <button onClick={() => handleOpenModal('addProduct')}>
+                <button type="button" onClick={() => handleOpenModal('addProduct')}>
                   Cadastro de estoque
                   <div className="fab-icon-wrapper">
                     <Package size={20} />
                   </div>
                 </button>
-                <button onClick={() => handleOpenModal('addPayment')}>
+                <button type="button" onClick={() => handleOpenModal('addPayment')}>
                   Cadastro de pendentes
                   <div className="fab-icon-wrapper">
                     <CircleDollarSign size={20} />
@@ -448,7 +169,12 @@ export default function Dashboard() {
                 </button>
               </div>
             )}
-            <button className="fab-button" onClick={() => setMenuOpen(!isMenuOpen)}>
+            <button
+              type="button"
+              className="fab-button"
+              onClick={() => setMenuOpen(!isMenuOpen)}
+              aria-label="Abrir menu de cadastro rápido"
+            >
               <Plus size={25} />
             </button>
           </div>
@@ -463,8 +189,9 @@ export default function Dashboard() {
             >
               <h2>Cadastro de categorias</h2>
               <div className="add-inputs-wrapper">
-                <label>Nome da categoria*</label>
+                <label htmlFor="new-category-name">Nome da categoria*</label>
                 <input
+                  id="new-category-name"
                   type="text"
                   placeholder="Ex: Refrigerantes, Biscoitos, Higiene..."
                   value={categoryName}
@@ -482,7 +209,7 @@ export default function Dashboard() {
           <Modal isOpen={activeModal === 'addProduct'} onClose={handleCloseModal}>
             <AddProductForm
               categories={categories}
-              onSave={(productData) => addProductMutation.mutate(productData)}
+              onSave={(productData) => addProductMutation.mutateAsync(productData)}
             />
           </Modal>
 
@@ -500,8 +227,9 @@ export default function Dashboard() {
             >
               <h2>Cadastro de pagamentos pendentes</h2>
               <div className="add-inputs-wrapper">
-                <label>Nome do cliente*</label>
+                <label htmlFor="new-debtor-client">Nome do cliente*</label>
                 <input
+                  id="new-debtor-client"
                   type="text"
                   placeholder="Ex: Maria"
                   value={newDebtorClient}
@@ -510,18 +238,19 @@ export default function Dashboard() {
                 />
               </div>
               <div className="add-inputs-wrapper">
-                <label>Descrição</label>
+                <label htmlFor="new-debtor-description">Descrição</label>
                 <input
+                  id="new-debtor-description"
                   type="text"
                   placeholder="Ex: 1 Coca Cola 1L, 4 Biscoitos Amori..."
                   value={newDebtorDescription}
                   onChange={(e) => setNewDebtorDescription(e.target.value)}
-                  required
                 />
               </div>
               <div className="add-inputs-wrapper">
-                <label>Valor*</label>
+                <label htmlFor="new-debtor-value">Valor*</label>
                 <input
+                  id="new-debtor-value"
                   type="number"
                   placeholder="Valor maior ou igual a 0"
                   value={newDebtorValue}

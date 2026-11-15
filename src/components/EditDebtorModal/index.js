@@ -19,7 +19,10 @@ export default function EditDebtorModal({ debtor, onSave, onClose }) {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await onSave(formData);
+      await onSave({
+        ...formData,
+        value: parseFloat(formData.value),
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -50,7 +53,6 @@ export default function EditDebtorModal({ debtor, onSave, onClose }) {
             name="description"
             value={formData.description || ''}
             onChange={handleChange}
-            required
           />
         </div>
 
