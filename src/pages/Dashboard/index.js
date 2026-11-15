@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package, LogOut, CircleAlert, X, CircleDollarSign, Plus, Tag, History, User } from 'lucide-react';
+import { Package, LogOut, CircleAlert, X, CircleDollarSign, Plus, Tag, History, User, UsersRound } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -185,6 +185,12 @@ export default function Dashboard() {
               <CircleDollarSign size={17} />
               Caderneta
             </NavLink>
+            {user?.role === 'ADMIN' && (
+              <NavLink to="/dashboard/users" className="navigate-button">
+                <UsersRound size={17} />
+                Usuários
+              </NavLink>
+            )}
           </div>
         </nav>
 
