@@ -1,0 +1,40 @@
+/*
+ * EaseUI — MIT License
+ * Copyright (c) 2026 Ryan Cuff / Saurabh Chauhan (https://github.com/rjcuff/easeui)
+ * Isolated library setup stylesheet (from devlibs get_library_setup)
+ */
+@theme inline {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --color-border-strong: var(--border-strong);
+}
+
+.easeui-theme {
+  --background: oklch(99% 0 0);
+  --foreground: oklch(15% 0 0);
+  --card: oklch(97% 0 0);
+  --muted-foreground: oklch(50% 0 0);
+  --border: oklch(15% 0 0 / 0.06);
+  --border-strong: oklch(15% 0 0 / 0.12);
+  --accent-fg: oklch(99% 0 0);
+  --neon: oklch(80% 0.22 145);
+  --violet: oklch(68% 0.22 295);
+  --danger: oklch(62% 0.22 25);
+  --success: oklch(70% 0.18 155);
+  --warning: oklch(78% 0.18 75);
+  --glass-bg: oklch(99% 0 0 / 0.55);
+  --glass-border: oklch(15% 0 0 / 0.08);
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: var(--foreground);
+  --primary-foreground: var(--background);
+  --secondary: var(--card);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--card);
+  --accent: oklch(64.5% 0.215 8);
+  --accent-foreground: var(--accent-fg);
+  --destructive: var(--danger);
+  --input: var(--border);
+  --ring: var(--border-strong);
+}

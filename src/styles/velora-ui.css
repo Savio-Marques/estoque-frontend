@@ -1,0 +1,104 @@
+/*
+ * Velora UI — MIT License
+ * Copyright (c) 2026 Aigars Silkalns (https://github.com/ColorlibHQ/velora-ui)
+ * Isolated library setup stylesheet (from devlibs get_library_setup)
+ */
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-from: var(--brand-from);
+  --color-brand-via: var(--brand-via);
+  --color-brand-to: var(--brand-to);
+  --animate-aurora-1: aurora-1 14s ease-in-out infinite alternate;
+  --animate-aurora-2: aurora-2 18s ease-in-out infinite alternate;
+  --animate-aurora-3: aurora-3 22s ease-in-out infinite alternate;
+
+  @keyframes aurora-1 {
+    0% {
+      transform: translate(-10%, -12%) scale(1);
+    }
+    50% {
+      transform: translate(12%, 8%) scale(1.25);
+    }
+    100% {
+      transform: translate(-6%, 14%) scale(0.95);
+    }
+  }
+
+  @keyframes aurora-2 {
+    0% {
+      transform: translate(12%, 10%) scale(1.1);
+    }
+    50% {
+      transform: translate(-14%, -6%) scale(0.9);
+    }
+    100% {
+      transform: translate(8%, -12%) scale(1.2);
+    }
+  }
+
+  @keyframes aurora-3 {
+    0% {
+      transform: translate(0%, 16%) scale(0.95);
+    }
+    50% {
+      transform: translate(10%, -10%) scale(1.15);
+    }
+    100% {
+      transform: translate(-12%, 4%) scale(1);
+    }
+  }
+}
+
+.velora-theme {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.45 0.12 165);
+  --primary-foreground: oklch(0.985 0 0);
+  --brand: oklch(0.45 0.12 165);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-from: oklch(0.46 0.13 165);
+  --brand-via: oklch(0.56 0.13 160);
+  --brand-to: oklch(0.72 0.15 75);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --radius: 0.625rem;
+}
+
+.velora-theme .dark {
+  --background: oklch(0.16 0.015 165);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.19 0.02 165);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.62 0.14 162);
+  --primary-foreground: oklch(0.145 0 0);
+  --brand: oklch(0.62 0.14 162);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-from: oklch(0.46 0.14 165);
+  --brand-via: oklch(0.56 0.14 158);
+  --brand-to: oklch(0.74 0.15 78);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.76 0.01 165);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+}

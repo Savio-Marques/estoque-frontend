@@ -1,83 +1,84 @@
 import React, { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 import Modal from '../Modal';
 import './style.css';
 
-export default function EditProductModal({ product, categories = [], onSave, onClose, onDeleteRequest }) {
+function EditProductModal({ product, categories = [], onSave, onClose, onDeleteRequest }) {
   const [formData, setFormData] = useState({
-    ...product,
-    costPrice: product.costPrice ?? 0,
-    salePrice: product.salePrice ?? 0,
-    minQuantity: product.minQuantity ?? 5,
+    name: '',
+    qtd: 0,
+    costPrice: 0,
+    salePrice: 0,
+    minQuantity: 0,
+    categoryId: '',
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    setFormData({
-      ...product,
-      costPrice: product.costPrice ?? 0,
-      salePrice: product.salePrice ?? 0,
-      minQuantity: product.minQuantity ?? 5,
-    });
+    if (product) {
+      setFormData({
+        name: product.name || '',
+        qtd: product.qtd || 0,
+        costPrice: product.costPrice || 0,
+        salePrice: product.salePrice || 0,
+        minQuantity: product.minQuantity || 0,
+        categoryId: product.categoryId || product.category?.id || '',
+      });
+    }
   }, [product]);
+
+  if (!product) {
+    return null;
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    let parsedValue = value;
-    if (name === 'categoryId' || name === 'qtd' || name === 'minQuantity') {
-      parsedValue = parseInt(value, 10);
-    } else if (name === 'costPrice' || name === 'salePrice') {
-      parsedValue = value === '' ? '' : parseFloat(value);
-    }
-    setFormData((prevData) => ({ ...prevData, [name]: parsedValue }));
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      await onSave({
-        ...formData,
-        costPrice: parseFloat(formData.costPrice) || 0,
-        salePrice: parseFloat(formData.salePrice) || 0,
-        minQuantity: parseInt(formData.minQuantity, 10) || 0,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteClick = () => {
-    onDeleteRequest(product);
+    onSave({
+      ...product,
+      ...formData,
+      qtd: parseInt(formData.qtd, 10),
+      costPrice: parseFloat(formData.costPrice) || 0,
+      salePrice: parseFloat(formData.salePrice) || 0,
+      minQuantity: parseInt(formData.minQuantity, 10) || 0,
+      categoryId: parseInt(formData.categoryId, 10),
+    });
   };
 
   return (
-    <Modal isOpen={true} onClose={onClose}>
-      <form className="editProduct-form" onSubmit={handleSubmit}>
-        <h2 className="editProduct-title">Editar Produto</h2>
-
-        <div className="editProduct-inputs">
-          <label htmlFor="edit-product-name">Nome do Produto*</label>
+    <Modal isOpen={Boolean(product)} onClose={onClose} title={`Editar · ${product.name}`}>
+      <form className="ledger-form" onSubmit={handleSubmit}>
+        <div className="ledger-field">
+          <label htmlFor="edit-product-name">Nome do Produto</label>
           <input
             id="edit-product-name"
+            className="ledger-input"
             type="text"
             name="name"
-            value={formData.name || ''}
+            value={formData.name}
             onChange={handleChange}
             required
           />
         </div>
 
-        <div className="editProduct-inputs">
-          <label htmlFor="edit-product-category">Categoria*</label>
+        <div className="ledger-field">
+          <label htmlFor="edit-product-category">Categoria</label>
           <select
             id="edit-product-category"
+            className="ledger-select"
             name="categoryId"
-            value={formData.categoryId || ''}
+            value={formData.categoryId}
             onChange={handleChange}
             required
           >
             <option value="" disabled>
-              Selecione uma categoria
+              Selecione uma categoria...
             </option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
@@ -87,77 +88,94 @@ export default function EditProductModal({ product, categories = [], onSave, onC
           </select>
         </div>
 
-        <div className="add-inputs-row">
-          <div className="editProduct-inputs">
-            <label htmlFor="edit-product-qtd">Quantidade*</label>
+        <div className="ledger-form-row">
+          <div className="ledger-field">
+            <label htmlFor="edit-product-qtd">Quantidade em Estoque</label>
             <input
               id="edit-product-qtd"
+              className="ledger-input mono"
               type="number"
               name="qtd"
-              value={formData.qtd ?? 0}
-              onChange={handleChange}
               min="0"
+              value={formData.qtd}
+              onChange={handleChange}
               required
             />
           </div>
 
-          <div className="editProduct-inputs">
-            <label htmlFor="edit-product-min-qtd">Estoque Mínimo*</label>
+          <div className="ledger-field">
+            <label htmlFor="edit-product-min">Estoque Mínimo</label>
             <input
-              id="edit-product-min-qtd"
+              id="edit-product-min"
+              className="ledger-input mono"
               type="number"
               name="minQuantity"
-              value={formData.minQuantity ?? 5}
-              onChange={handleChange}
               min="0"
-              required
-            />
-          </div>
-        </div>
-
-        <div className="add-inputs-row">
-          <div className="editProduct-inputs">
-            <label htmlFor="edit-product-cost">Preço de Custo (R$)</label>
-            <input
-              id="edit-product-cost"
-              type="number"
-              name="costPrice"
-              step="0.01"
-              min="0"
-              value={formData.costPrice ?? 0}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="editProduct-inputs">
-            <label htmlFor="edit-product-sale">Preço de Venda (R$)</label>
-            <input
-              id="edit-product-sale"
-              type="number"
-              name="salePrice"
-              step="0.01"
-              min="0"
-              value={formData.salePrice ?? 0}
+              value={formData.minQuantity}
               onChange={handleChange}
             />
           </div>
         </div>
 
-        <div className="modal-actions-products">
-          <div className="modal-actions-wrapper">
-            <button type="submit" className="save-button-product" disabled={isSubmitting}>
-              {isSubmitting ? 'Salvando...' : 'Salvar'}
-            </button>
-            <button type="button" onClick={onClose} className="cancel-button-product">
-              Cancelar
-            </button>
+        <div className="ledger-form-row">
+          <div className="ledger-field">
+            <label htmlFor="edit-product-cost">Preço de Custo</label>
+            <div className="ledger-input-affix">
+              <span className="affix-prefix">R$</span>
+              <input
+                id="edit-product-cost"
+                className="ledger-input mono"
+                type="number"
+                step="0.01"
+                min="0"
+                name="costPrice"
+                value={formData.costPrice}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="ledger-field">
+            <label htmlFor="edit-product-sale">Preço de Venda</label>
+            <div className="ledger-input-affix">
+              <span className="affix-prefix">R$</span>
+              <input
+                id="edit-product-sale"
+                className="ledger-input mono"
+                type="number"
+                step="0.01"
+                min="0"
+                name="salePrice"
+                value={formData.salePrice}
+                onChange={handleChange}
+              />
+            </div>
           </div>
         </div>
 
-        <button type="button" className="delete-button" onClick={handleDeleteClick}>
-          Deletar
-        </button>
+        <div className="ledger-danger-zone">
+          <span>Remover item permanentemente</span>
+          <button
+            type="button"
+            className="ledger-btn-danger"
+            onClick={() => onDeleteRequest(product)}
+          >
+            <Trash2 className="size-4" />
+            Excluir Produto
+          </button>
+        </div>
+
+        <div className="ledger-form-actions">
+          <button type="button" className="ledger-btn-secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="submit" className="ledger-btn-primary">
+            Salvar Alterações
+          </button>
+        </div>
       </form>
     </Modal>
   );
 }
+
+export default EditProductModal;

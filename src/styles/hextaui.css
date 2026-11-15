@@ -1,0 +1,193 @@
+/*
+ * HextaUI — MIT License
+ * Copyright (c) 2026 Preet Suthar (https://github.com/preetsuthar17/hextaui)
+ * Isolated library setup stylesheet (from devlibs get_library_setup)
+ */
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *):not(:where([data-color-scheme=light] *)));
+
+@theme inline {
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-focus-ring: color-mix(in oklab, var(--foreground) 40%, transparent);
+  --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --default-border-width: var(--hairline);
+  --animate-button-state-in: button-state-in 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-button-state-out: button-state-out 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-button-draw-circle: button-draw 240ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-button-draw-check: button-draw 180ms cubic-bezier(0.2, 0, 0, 1) 180ms both;
+  --animate-spinner-rotate: spinner-rotate 0.9s linear infinite;
+  --animate-spinner-dash: spinner-dash 1.5s ease-in-out infinite;
+  --animate-spinner-ticks: spinner-rotate 0.8s steps(8, end) infinite;
+  --animate-spinner-pulse: spinner-pulse 1.6s ease-in-out infinite;
+  --animate-button-shake: button-shake 320ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+
+  @keyframes button-state-in {
+    from {
+      opacity: 0;
+      transform: perspective(220px) rotateX(90deg) translateY(0.75rem);
+    }
+    to {
+      opacity: 1;
+      transform: perspective(220px) rotateX(0) translateY(0);
+    }
+  }
+
+  @keyframes button-state-out {
+    from {
+      opacity: 1;
+      transform: perspective(220px) rotateX(0) translateY(0);
+    }
+    50% {
+      opacity: 0;
+    }
+    to {
+      opacity: 0;
+      transform: perspective(220px) rotateX(-90deg) translateY(-0.75rem);
+    }
+  }
+
+  @keyframes spinner-rotate {
+    to {
+      rotate: 360deg;
+    }
+  }
+
+  @keyframes spinner-dash {
+    0% {
+      stroke-dasharray: 1 60;
+      stroke-dashoffset: 0;
+    }
+    50% {
+      stroke-dasharray: 34 60;
+      stroke-dashoffset: -12;
+    }
+    100% {
+      stroke-dasharray: 34 60;
+      stroke-dashoffset: -56;
+    }
+  }
+
+  @keyframes spinner-pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+
+  @keyframes button-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes button-shake {
+    0%, 100% {
+      translate: 0;
+    }
+    20% {
+      translate: -3px;
+    }
+    40% {
+      translate: 3px;
+    }
+    60% {
+      translate: -2px;
+    }
+    80% {
+      translate: 2px;
+    }
+  }
+}
+
+@utility border-hairline {
+  border-width: var(--hairline);
+}
+
+:root,
+.hextaui-theme {
+  --hairline: 1px;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.535 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.53 0.22 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --success: oklch(0.527 0.154 150);
+  --success-foreground: oklch(0.985 0 0);
+  --info: oklch(0.546 0.215 262);
+  --info-foreground: oklch(0.985 0 0);
+  --warning: oklch(0.555 0.163 49);
+  --warning-foreground: oklch(0.985 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --radius: 0.8rem;
+}
+
+@media (min-resolution: 1.5dppx) {
+  :root,
+  .hextaui-theme {
+    --hairline: calc(1px / 1.5);
+  }
+}
+
+@media (min-resolution: 2dppx) {
+  :root,
+  .hextaui-theme {
+    --hairline: 0.5px;
+  }
+}
+
+@media (min-resolution: 3dppx) {
+  :root,
+  .hextaui-theme {
+    --hairline: calc(1px / 3);
+  }
+}

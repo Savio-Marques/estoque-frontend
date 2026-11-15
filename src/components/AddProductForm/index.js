@@ -1,131 +1,139 @@
 import React, { useState } from 'react';
-import { PackagePlus } from 'lucide-react';
+import { toast } from 'react-toastify';
 
-export default function AddProductForm({ categories = [], onSave }) {
+function AddProductForm({ categories = [], onSave }) {
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [qtd, setQtd] = useState(0);
-  const [costPrice, setCostPrice] = useState('0');
-  const [salePrice, setSalePrice] = useState('0');
-  const [minQuantity, setMinQuantity] = useState(5);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [qtd, setQtd] = useState('');
+  const [costPrice, setCostPrice] = useState('');
+  const [salePrice, setSalePrice] = useState('');
+  const [minQuantity, setMinQuantity] = useState('');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name || !categoryId) return;
-
-    setIsSubmitting(true);
-    try {
-      await onSave({
-        name,
-        categoryId: parseInt(categoryId, 10),
-        qtd: parseInt(qtd, 10),
-        costPrice: parseFloat(costPrice) || 0,
-        salePrice: parseFloat(salePrice) || 0,
-        minQuantity: parseInt(minQuantity, 10) || 0,
-      });
-      setName('');
-      setCategoryId('');
-      setQtd(0);
-      setCostPrice('0');
-      setSalePrice('0');
-      setMinQuantity(5);
-    } finally {
-      setIsSubmitting(false);
+    if (!name.trim() || !categoryId || !qtd) {
+      toast.error('Por favor, preencha nome, categoria e quantidade.');
+      return;
     }
+
+    onSave({
+      name,
+      categoryId: parseInt(categoryId, 10),
+      qtd: parseInt(qtd, 10),
+      costPrice: parseFloat(costPrice) || 0,
+      salePrice: parseFloat(salePrice) || 0,
+      minQuantity: parseInt(minQuantity, 10) || 0,
+    });
   };
 
   return (
-    <form className="add-container" onSubmit={handleSubmit}>
-      <h2>Cadastro de produtos</h2>
-
-      <div className="add-inputs-wrapper">
-        <label htmlFor="product-name-input">Nome do Produto *</label>
+    <form className="ledger-form" onSubmit={handleSubmit}>
+      <div className="ledger-field">
+        <label htmlFor="add-product-name">Nome do Produto</label>
         <input
-          id="product-name-input"
+          id="add-product-name"
+          className="ledger-input"
           type="text"
-          placeholder="Ex: Coca-Cola 2L"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          placeholder="Ex: Camisa Polo P"
           required
+          autoFocus
         />
       </div>
 
-      <div className="add-inputs-wrapper">
-        <label htmlFor="product-category-select">Categoria *</label>
+      <div className="ledger-field">
+        <label htmlFor="add-product-category">Categoria</label>
         <select
-          id="product-category-select"
+          id="add-product-category"
+          className="ledger-select"
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
           required
         >
-          <option className="extern-option" value="" disabled>
-            Selecione uma categoria
+          <option value="" disabled>
+            Selecione uma categoria...
           </option>
           {categories.map((cat) => (
-            <option className="intern-option" key={cat.id} value={cat.id}>
+            <option key={cat.id} value={cat.id}>
               {cat.name}
             </option>
           ))}
         </select>
       </div>
 
-      <div className="add-inputs-row">
-        <div className="add-inputs-wrapper">
-          <label htmlFor="product-qtd-input">Quantidade *</label>
+      <div className="ledger-form-row">
+        <div className="ledger-field">
+          <label htmlFor="add-product-qtd">Quantidade Inicial</label>
           <input
-            id="product-qtd-input"
+            id="add-product-qtd"
+            className="ledger-input mono"
             type="number"
+            min="0"
             value={qtd}
             onChange={(e) => setQtd(e.target.value)}
+            placeholder="0"
             required
-            min="0"
           />
         </div>
 
-        <div className="add-inputs-wrapper">
-          <label htmlFor="product-min-qtd-input">Estoque Mínimo *</label>
+        <div className="ledger-field">
+          <label htmlFor="add-product-min">Estoque Mínimo</label>
           <input
-            id="product-min-qtd-input"
+            id="add-product-min"
+            className="ledger-input mono"
             type="number"
+            min="0"
             value={minQuantity}
             onChange={(e) => setMinQuantity(e.target.value)}
-            required
-            min="0"
+            placeholder="0"
           />
         </div>
       </div>
 
-      <div className="add-inputs-row">
-        <div className="add-inputs-wrapper">
-          <label htmlFor="product-cost-input">Preço de Custo (R$)</label>
-          <input
-            id="product-cost-input"
-            type="number"
-            step="0.01"
-            min="0"
-            value={costPrice}
-            onChange={(e) => setCostPrice(e.target.value)}
-          />
+      <div className="ledger-form-row">
+        <div className="ledger-field">
+          <label htmlFor="add-product-cost">Preço de Custo</label>
+          <div className="ledger-input-affix">
+            <span className="affix-prefix">R$</span>
+            <input
+              id="add-product-cost"
+              className="ledger-input mono"
+              type="number"
+              step="0.01"
+              min="0"
+              value={costPrice}
+              onChange={(e) => setCostPrice(e.target.value)}
+              placeholder="0.00"
+            />
+          </div>
         </div>
 
-        <div className="add-inputs-wrapper">
-          <label htmlFor="product-sale-input">Preço de Venda (R$)</label>
-          <input
-            id="product-sale-input"
-            type="number"
-            step="0.01"
-            min="0"
-            value={salePrice}
-            onChange={(e) => setSalePrice(e.target.value)}
-          />
+        <div className="ledger-field">
+          <label htmlFor="add-product-sale">Preço de Venda</label>
+          <div className="ledger-input-affix">
+            <span className="affix-prefix">R$</span>
+            <input
+              id="add-product-sale"
+              className="ledger-input mono"
+              type="number"
+              step="0.01"
+              min="0"
+              value={salePrice}
+              onChange={(e) => setSalePrice(e.target.value)}
+              placeholder="0.00"
+            />
+          </div>
         </div>
       </div>
 
-      <button className="add-button" type="submit" disabled={isSubmitting}>
-        <PackagePlus size={20} />
-        {isSubmitting ? 'Cadastrando...' : 'Cadastrar'}
-      </button>
+      <div className="ledger-form-actions">
+        <button type="submit" className="ledger-btn-primary">
+          Salvar Produto
+        </button>
+      </div>
     </form>
   );
 }
+
+export default AddProductForm;

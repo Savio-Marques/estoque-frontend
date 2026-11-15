@@ -1,343 +1,424 @@
-import React, { useState, useMemo } from 'react';
-import { UsersRound, Shield, Plus, SquarePen, Trash2 } from 'lucide-react';
-import Modal from '../../components/Modal';
-import ConfirmationModal from '../../components/ConfirmationModal';
+import React, { useState } from 'react';
+import { Pencil, Shield, Trash2, UserPlus, Users as UsersIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUsers, useUserMutations } from '../../hooks/useUsers';
+import { InsightCard } from '@/components/motion/insight-card';
+import { NumberTicker } from '@/components/motion/number-ticker';
+import { Spinner } from '@/components/ui/spinner';
+import Modal from '../../components/Modal';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import './style.css';
 
-export default function Users() {
+const formatInteger = (value) => Math.round(Number(value || 0)).toLocaleString('pt-BR');
+
+function Users() {
   const { user: currentUser } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { data: users = [], isLoading, isError } = useUsers();
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [confirmationProps, setConfirmationProps] = useState({ isOpen: false });
 
-  // Form states para novo usuário
-  const [newName, setNewName] = useState('');
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newRole, setNewRole] = useState('USER');
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    username: '',
+    password: '',
+    role: 'USER',
+  });
 
-  // Form states para edição de usuário
-  const [editName, setEditName] = useState('');
-  const [editUsername, setEditUsername] = useState('');
-  const [editPassword, setEditPassword] = useState('');
-  const [editRole, setEditRole] = useState('USER');
-
-  const { data: users = [], isLoading } = useUsers();
+  const [editForm, setEditForm] = useState({
+    name: '',
+    password: '',
+    role: 'USER',
+  });
 
   const { createUserMutation, updateUserMutation, deleteUserMutation } = useUserMutations({
     onCreateSuccess: () => {
       setIsCreateOpen(false);
-      setNewName('');
-      setNewUsername('');
-      setNewPassword('');
-      setNewRole('USER');
+      setCreateForm({ name: '', username: '', password: '', role: 'USER' });
     },
     onUpdateSuccess: () => {
       setEditingUser(null);
-      setEditPassword('');
     },
-    onDeleteSuccess: () => setConfirmationProps({ isOpen: false }),
+    onDeleteSuccess: () => {
+      setConfirmationProps({ isOpen: false });
+      setEditingUser(null);
+    },
   });
 
-  const filteredUsers = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return users;
-    return users.filter(
-      (u) =>
-        u.name?.toLowerCase().includes(term) ||
-        u.username?.toLowerCase().includes(term)
-    );
-  }, [users, searchTerm]);
-
-  const adminCount = useMemo(
-    () => users.filter((u) => u.role === 'ADMIN').length,
-    [users]
-  );
-
-  const openEditModal = (target) => {
-    setEditingUser(target);
-    setEditName(target.name || '');
-    setEditUsername(target.username || '');
-    setEditPassword('');
-    setEditRole(target.role || 'USER');
-  };
-
-  const requestDeleteConfirmation = (target) => {
-    setConfirmationProps({
-      isOpen: true,
-      title: 'Confirmar Exclusão de Conta',
-      message: `Deseja excluir permanentemente o usuário "${target.name}" (@${target.username})? Todos os produtos, categorias, movimentações e devedores dessa conta serão removidos.`,
-      onConfirm: () => deleteUserMutation.mutate(target.id),
-      confirmButtonClass: 'confirm-button-delete',
+  const handleOpenEdit = (u) => {
+    setEditingUser(u);
+    setEditForm({
+      name: u.name || '',
+      password: '',
+      role: u.role || 'USER',
     });
   };
 
-  const handleCreateSubmit = async (e) => {
+  const handleCreateSubmit = (e) => {
     e.preventDefault();
-    await createUserMutation.mutateAsync({
-      name: newName.trim(),
-      username: newUsername.trim(),
-      password: newPassword,
-      role: newRole,
-    });
+    createUserMutation.mutate(createForm);
   };
 
-  const handleEditSubmit = async (e) => {
+  const handleEditSubmit = (e) => {
     e.preventDefault();
     if (!editingUser) return;
-    await updateUserMutation.mutateAsync({
-      id: editingUser.id,
-      name: editName.trim(),
-      username: editUsername.trim(),
-      password: editPassword.trim() ? editPassword : null,
-      role: editRole,
+    const payload = {
+      name: editForm.name,
+      role: editForm.role,
+      password: editForm.password || null,
+    };
+    updateUserMutation.mutate({ id: editingUser.id, userData: payload });
+  };
+
+  const handleDeleteRequest = (u) => {
+    setConfirmationProps({
+      isOpen: true,
+      title: 'Excluir Usuário',
+      message: `Tem certeza que deseja excluir o usuário "${u.name}" (@${u.username})?`,
+      confirmButtonClass: 'confirm-button-delete',
+      onConfirm: () => {
+        deleteUserMutation.mutate(u.id);
+      },
     });
   };
 
+  const adminCount = users.filter((u) => u.role === 'ADMIN').length;
+
   return (
-    <div className="users-page">
-      <div className="users-container">
-        <div className="stats-group-users">
-          <div className="stat-card">
-            <div>
-              <p>Total de Contas</p>
-              <span>{users.length}</span>
-            </div>
-            <div className="icon-wrapper blue">
-              <UsersRound size={28} />
-            </div>
-          </div>
-          <div className="stat-card">
-            <div>
-              <p>Contas Root (ADMIN)</p>
-              <span>{adminCount}</span>
-            </div>
-            <div className="icon-wrapper purple">
-              <Shield size={28} />
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Editorial Header */}
+      <div className="flex flex-col gap-4 border-b border-[var(--ledger-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <span className="font-mono-tabular text-[0.72rem] font-semibold uppercase tracking-widest text-[var(--ledger-accent)]">
+            Administração
+          </span>
+          <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-[1.75rem]">
+            Gerenciar Usuários
+          </h2>
+          <p className="mt-1 text-sm text-[var(--ledger-ink-muted)]">
+            Controle credenciais de acesso e permissões operacionais da equipe.
+          </p>
         </div>
 
-        <div className="users-toolbar">
-          <input
-            type="text"
-            placeholder="Pesquisar por nome ou usuário..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button
-            type="button"
-            className="users-add-btn"
-            onClick={() => setIsCreateOpen(true)}
-          >
-            <Plus size={18} />
-            Novo Usuário
-          </button>
-        </div>
-
-        <div className="users-list">
-          <table className="users-list-table">
-            <thead>
-              <tr>
-                <th className="col-user-name">Nome</th>
-                <th className="col-user-username">Usuário</th>
-                <th className="col-user-role">Perfil</th>
-                <th className="col-user-action">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '1.5rem' }}>
-                    Carregando usuários...
-                  </td>
-                </tr>
-              ) : filteredUsers.length === 0 ? (
-                <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '1.5rem' }}>
-                    Nenhum usuário encontrado.
-                  </td>
-                </tr>
-              ) : (
-                filteredUsers.map((u) => {
-                  const isSelf = u.username === currentUser?.username;
-                  return (
-                    <tr key={u.id}>
-                      <td data-label="Nome" className="col-user-name">
-                        {u.name} {isSelf && <span className="self-tag">(Você)</span>}
-                      </td>
-                      <td data-label="Usuário" className="col-user-username">
-                        @{u.username}
-                      </td>
-                      <td data-label="Perfil" className="col-user-role">
-                        <span className={`role-badge ${u.role === 'ADMIN' ? 'admin' : 'user'}`}>
-                          {u.role === 'ADMIN' ? 'ADMIN (Root)' : 'USER'}
-                        </span>
-                      </td>
-                      <td data-label="Ações" className="col-user-action">
-                        <span className="users-table-icon-wrapper">
-                          <button
-                            type="button"
-                            className="users-btn-edit"
-                            onClick={() => openEditModal(u)}
-                          >
-                            <SquarePen size={16} /> Editar
-                          </button>
-                          <button
-                            type="button"
-                            className="users-btn-delete"
-                            onClick={() => requestDeleteConfirmation(u)}
-                            disabled={isSelf}
-                            title={isSelf ? 'Você não pode excluir sua própria conta' : 'Excluir usuário'}
-                          >
-                            <Trash2 size={16} /> Excluir
-                          </button>
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <Modal
-          isOpen={isCreateOpen}
-          onClose={() => setIsCreateOpen(false)}
-          title="Cadastrar Novo Usuário"
+        <button
+          type="button"
+          onClick={() => setIsCreateOpen(true)}
+          className="ledger-btn-primary self-start sm:self-auto"
         >
-          <form className="user-form" onSubmit={handleCreateSubmit}>
-            <div className="add-inputs-wrapper">
-              <label htmlFor="new-user-name">Nome*</label>
+          <UserPlus className="size-4" />
+          <span>Novo Usuário</span>
+        </button>
+      </div>
+
+      {/* 2 User KPI Cards */}
+      <div className="easeui-theme grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+        <InsightCard
+          label="Total de Usuários"
+          value={<NumberTicker value={users.length} format={formatInteger} />}
+          icon={<UsersIcon className="size-4 text-[var(--ledger-accent)]" />}
+          className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
+        />
+
+        <InsightCard
+          label="Administradores"
+          value={<NumberTicker value={adminCount} format={formatInteger} />}
+          icon={<Shield className="size-4 text-[var(--ledger-amber)]" />}
+          className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
+        />
+      </div>
+
+      {/* Users Table / Cards */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] py-16 text-sm text-[var(--ledger-ink-subtle)]">
+          <Spinner className="size-6 text-[var(--ledger-accent)]" />
+          <span>Carregando usuários...</span>
+        </div>
+      ) : isError ? (
+        <div className="rounded-2xl border border-red-200 bg-[var(--ledger-danger-soft)] p-5 text-sm font-medium text-[var(--ledger-danger)]">
+          Erro ao carregar usuários.
+        </div>
+      ) : (
+        <>
+          {/* Desktop Table */}
+          <div className="hidden overflow-hidden rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] md:block">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[0.7rem] font-bold uppercase tracking-wider text-[var(--ledger-ink-subtle)]">
+                    <th className="px-5 py-3.5">Nome</th>
+                    <th className="px-5 py-3.5">Login</th>
+                    <th className="px-5 py-3.5">Perfil</th>
+                    <th className="px-5 py-3.5 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--ledger-border)]">
+                  {users.map((u) => {
+                    const isSelf = u.username === currentUser?.username;
+                    return (
+                      <tr
+                        key={u.id}
+                        className="transition-colors hover:bg-[var(--ledger-surface-hover)]"
+                      >
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-[var(--ledger-ink)]">{u.name}</span>
+                            {isSelf && (
+                              <span className="rounded-md bg-[var(--ledger-accent-soft)] px-2 py-0.5 text-[0.68rem] font-bold text-[var(--ledger-accent)]">
+                                Você
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="font-mono-tabular px-5 py-3.5 text-xs text-[var(--ledger-ink-muted)]">
+                          @{u.username}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span
+                            className={`inline-flex items-center rounded-md border px-2.5 py-0.5 font-mono-tabular text-[0.7rem] font-bold uppercase tracking-wider ${
+                              u.role === 'ADMIN'
+                                ? 'border-amber-300/80 bg-[var(--ledger-amber-soft)] text-amber-900'
+                                : 'border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[var(--ledger-ink-muted)]'
+                            }`}
+                          >
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(u)}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-2.5 text-xs font-semibold text-[var(--ledger-ink-muted)] transition-colors hover:bg-[var(--ledger-surface-muted)] hover:text-[var(--ledger-ink)]"
+                          >
+                            <Pencil className="size-3.5" />
+                            <span>Editar</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="space-y-3 md:hidden">
+            {users.map((u) => {
+              const isSelf = u.username === currentUser?.username;
+              return (
+                <div
+                  key={u.id}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-4"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-bold text-[var(--ledger-ink)]">{u.name}</p>
+                      {isSelf && (
+                        <span className="rounded bg-[var(--ledger-accent-soft)] px-1.5 py-0.5 text-[0.65rem] font-bold text-[var(--ledger-accent)]">
+                          Você
+                        </span>
+                      )}
+                    </div>
+                    <p className="font-mono-tabular mt-0.5 text-xs text-[var(--ledger-ink-subtle)]">
+                      @{u.username}
+                    </p>
+                    <span
+                      className={`mt-2 inline-flex items-center rounded border px-2 py-0.5 font-mono-tabular text-[0.68rem] font-bold uppercase ${
+                        u.role === 'ADMIN'
+                          ? 'border-amber-300/80 bg-[var(--ledger-amber-soft)] text-amber-900'
+                          : 'border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[var(--ledger-ink-muted)]'
+                      }`}
+                    >
+                      {u.role}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEdit(u)}
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] px-3 text-xs font-semibold text-[var(--ledger-ink)]"
+                  >
+                    <Pencil className="size-3.5" />
+                    <span>Editar</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Create User Modal */}
+      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Novo Usuário">
+        <form className="ledger-form" onSubmit={handleCreateSubmit}>
+          <div className="ledger-field">
+            <label htmlFor="create-name">Nome Completo</label>
+            <input
+              id="create-name"
+              className="ledger-input"
+              type="text"
+              value={createForm.name}
+              onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))}
+              placeholder="Ex: Maria Souza"
+              required
+              autoFocus
+            />
+          </div>
+
+          <div className="ledger-form-row">
+            <div className="ledger-field">
+              <label htmlFor="create-username">Login (Usuário)</label>
               <input
-                id="new-user-name"
+                id="create-username"
+                className="ledger-input mono"
                 type="text"
-                placeholder="Nome completo ou comércio"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                value={createForm.username}
+                onChange={(e) => setCreateForm((p) => ({ ...p, username: e.target.value }))}
+                placeholder="Ex: maria.souza"
                 required
               />
             </div>
-            <div className="add-inputs-wrapper">
-              <label htmlFor="new-user-username">Nome de Usuário (Login)*</label>
-              <input
-                id="new-user-username"
-                type="text"
-                placeholder="Ex: joao.silva"
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
-                required
-              />
-            </div>
-            <div className="add-inputs-wrapper">
-              <label htmlFor="new-user-password">Senha Inicial* (mín. 6 caracteres)</label>
-              <input
-                id="new-user-password"
-                type="password"
-                placeholder="Digite a senha de acesso"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                minLength={6}
-                required
-              />
-            </div>
-            <div className="add-inputs-wrapper">
-              <label htmlFor="new-user-role">Perfil*</label>
+
+            <div className="ledger-field">
+              <label htmlFor="create-role">Perfil de Acesso</label>
               <select
-                id="new-user-role"
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value)}
+                id="create-role"
+                className="ledger-select"
+                value={createForm.role}
+                onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
               >
-                <option value="USER">USER (Usuário Comum)</option>
-                <option value="ADMIN">ADMIN (Root)</option>
+                <option value="USER">USER (Operacional)</option>
+                <option value="ADMIN">ADMIN (Administrador)</option>
               </select>
             </div>
+          </div>
+
+          <div className="ledger-field">
+            <label htmlFor="create-password">Senha Inicial</label>
+            <input
+              id="create-password"
+              className="ledger-input"
+              type="password"
+              value={createForm.password}
+              onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))}
+              placeholder="Mínimo 6 caracteres"
+              minLength={6}
+              required
+            />
+          </div>
+
+          <div className="ledger-form-actions">
             <button
-              className="add-button"
+              type="button"
+              className="ledger-btn-secondary"
+              onClick={() => setIsCreateOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button
               type="submit"
+              className="ledger-btn-primary"
               disabled={createUserMutation.isPending}
             >
-              <Plus size={18} />
-              {createUserMutation.isPending ? 'Cadastrando...' : 'Criar Usuário'}
+              {createUserMutation.isPending ? 'Criando...' : 'Criar Usuário'}
             </button>
-          </form>
-        </Modal>
+          </div>
+        </form>
+      </Modal>
 
-        <Modal
-          isOpen={Boolean(editingUser)}
-          onClose={() => setEditingUser(null)}
-          title="Editar Usuário"
-        >
-          {editingUser && (
-            <form className="user-form" onSubmit={handleEditSubmit}>
-              <div className="add-inputs-wrapper">
-                <label htmlFor="edit-user-name">Nome*</label>
-                <input
-                  id="edit-user-name"
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="add-inputs-wrapper">
-                <label htmlFor="edit-user-username">Nome de Usuário*</label>
-                <input
-                  id="edit-user-username"
-                  type="text"
-                  value={editUsername}
-                  onChange={(e) => setEditUsername(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="add-inputs-wrapper">
-                <label htmlFor="edit-user-password">Nova Senha (opcional, mín. 6 caracteres)</label>
-                <input
-                  id="edit-user-password"
-                  type="password"
-                  placeholder="Deixe vazio para manter a senha atual"
-                  value={editPassword}
-                  onChange={(e) => setEditPassword(e.target.value)}
-                  minLength={6}
-                />
-              </div>
-              <div className="add-inputs-wrapper">
-                <label htmlFor="edit-user-role">Perfil*</label>
-                <select
-                  id="edit-user-role"
-                  value={editRole}
-                  onChange={(e) => setEditRole(e.target.value)}
-                  disabled={editingUser.username === currentUser?.username}
-                >
-                  <option value="USER">USER (Usuário Comum)</option>
-                  <option value="ADMIN">ADMIN (Root)</option>
-                </select>
-              </div>
-              <button
-                className="add-button"
-                type="submit"
-                disabled={updateUserMutation.isPending}
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={Boolean(editingUser)}
+        onClose={() => setEditingUser(null)}
+        title={`Editar Usuário · @${editingUser?.username || ''}`}
+      >
+        <form className="ledger-form" onSubmit={handleEditSubmit}>
+          <div className="ledger-field">
+            <label htmlFor="edit-name">Nome Completo</label>
+            <input
+              id="edit-name"
+              className="ledger-input"
+              type="text"
+              value={editForm.name}
+              onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+              required
+            />
+          </div>
+
+          <div className="ledger-form-row">
+            <div className="ledger-field">
+              <label htmlFor="edit-role">Perfil</label>
+              <select
+                id="edit-role"
+                className="ledger-select"
+                value={editForm.role}
+                onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
+                disabled={editingUser?.username === currentUser?.username}
               >
-                {updateUserMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
-              </button>
-            </form>
-          )}
-        </Modal>
+                <option value="USER">USER (Operacional)</option>
+                <option value="ADMIN">ADMIN (Administrador)</option>
+              </select>
+            </div>
 
-        <ConfirmationModal
-          isOpen={confirmationProps.isOpen}
-          onClose={() => setConfirmationProps({ isOpen: false })}
-          onConfirm={confirmationProps.onConfirm}
-          title={confirmationProps.title}
-          confirmButtonClass={confirmationProps.confirmButtonClass}
-        >
-          {confirmationProps.message}
-        </ConfirmationModal>
-      </div>
+            <div className="ledger-field">
+              <label htmlFor="edit-password">Nova Senha (opcional)</label>
+              <input
+                id="edit-password"
+                className="ledger-input"
+                type="password"
+                value={editForm.password}
+                onChange={(e) => setEditForm((p) => ({ ...p, password: e.target.value }))}
+                placeholder="Deixe vazio para manter"
+                minLength={6}
+              />
+            </div>
+          </div>
+
+          {editingUser?.username !== currentUser?.username && (
+            <div className="ledger-danger-zone">
+              <span>Remover usuário do sistema</span>
+              <button
+                type="button"
+                className="ledger-btn-danger"
+                onClick={() => handleDeleteRequest(editingUser)}
+              >
+                <Trash2 className="size-4" />
+                <span>Excluir Usuário</span>
+              </button>
+            </div>
+          )}
+
+          <div className="ledger-form-actions">
+            <button
+              type="button"
+              className="ledger-btn-secondary"
+              onClick={() => setEditingUser(null)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="ledger-btn-primary"
+              disabled={updateUserMutation.isPending}
+            >
+              {updateUserMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmationModal
+        isOpen={confirmationProps.isOpen}
+        onClose={() => setConfirmationProps({ isOpen: false })}
+        onConfirm={confirmationProps.onConfirm}
+        title={confirmationProps.title}
+        confirmButtonClass={confirmationProps.confirmButtonClass}
+      >
+        {confirmationProps.message}
+      </ConfirmationModal>
     </div>
   );
 }
+
+export default Users;

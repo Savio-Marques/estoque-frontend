@@ -1,327 +1,444 @@
 import React, { useState } from 'react';
-import { Package, LogOut, CircleAlert, X, CircleDollarSign, Plus, Tag, History, User, UsersRound } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-import AddProductForm from '../../components/AddProductForm';
-import Modal from '../../components/Modal';
-import ProfileModal from '../../components/ProfileModal';
-import StockMovementsModal from '../../components/StockMovementsModal';
+import {
+  Boxes,
+  BookOpen,
+  Tags,
+  Users as UsersIcon,
+  History,
+  Plus,
+  UserCog,
+  LogOut,
+  PackageCheck,
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProductSummary, useProductMutations } from '../../hooks/useProducts';
 import { useCategories, useCategoryMutations } from '../../hooks/useCategories';
 import { useDebtorMutations } from '../../hooks/useDebtors';
+import Modal from '../../components/Modal';
+import AddProductForm from '../../components/AddProductForm';
+import ProfileModal from '../../components/ProfileModal';
+import StockMovementsModal from '../../components/StockMovementsModal';
 import './style.css';
 
-export default function Dashboard() {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
+function getInitials(name, username) {
+  const source = (name || username || 'U').trim();
+  const parts = source.split(/\s+/);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return source.slice(0, 2).toUpperCase();
+}
 
-  const [isMenuOpen, setMenuOpen] = useState(false);
+function Dashboard() {
   const [activeModal, setActiveModal] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMovementsOpen, setIsMovementsOpen] = useState(false);
 
-  const [categoryName, setCategoryName] = useState('');
-  const [newDebtorClient, setNewDebtorClient] = useState('');
-  const [newDebtorDescription, setNewDebtorDescription] = useState('');
-  const [newDebtorValue, setNewDebtorValue] = useState('');
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [debtorName, setDebtorName] = useState('');
+  const [debtorValue, setDebtorValue] = useState('');
+  const [debtorDueDate, setDebtorDueDate] = useState('');
 
-  // Busca apenas o sumário no topo do Dashboard; categorias só são buscadas aqui se abrir o modal de novo produto
-  const {
-    data: summary = { totalProduct: 0, lowStock: 0, noStock: 0, totalStockValue: 0, totalSaleValue: 0 },
-  } = useProductSummary();
-  const { data: categories = [] } = useCategories({ enabled: activeModal === 'addProduct' });
-
-  const { addCategoryMutation } = useCategoryMutations({
-    onAddSuccess: () => {
-      setCategoryName('');
-      setActiveModal(null);
-    },
-  });
-
-  const { addProductMutation } = useProductMutations({
-    onAddSuccess: () => {
-      setActiveModal(null);
-    },
-  });
-
-  const { addDebtorMutation } = useDebtorMutations({
-    onAddSuccess: () => {
-      setActiveModal(null);
-      setNewDebtorClient('');
-      setNewDebtorDescription('');
-      setNewDebtorValue('');
-    },
-  });
-
-  const handleOpenModal = (modalName) => {
-    setActiveModal(modalName);
-    setMenuOpen(false);
-  };
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleCloseModal = () => {
     setActiveModal(null);
+    setNewCategoryName('');
+    setDebtorName('');
+    setDebtorValue('');
+    setDebtorDueDate('');
   };
+
+  const handleOpenModal = (modalName) => {
+    setActiveModal(modalName);
+  };
+
+  const { data: summary } = useProductSummary();
+  const { data: categories = [] } = useCategories({ enabled: activeModal === 'addProduct' });
+
+  const { addCategoryMutation } = useCategoryMutations({
+    onAddSuccess: () => handleCloseModal(),
+  });
+
+  const { addProductMutation } = useProductMutations({
+    onAddSuccess: () => handleCloseModal(),
+  });
+
+  const { addDebtorMutation } = useDebtorMutations({
+    onAddSuccess: () => handleCloseModal(),
+  });
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
+  const handleSaveCategory = (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    addCategoryMutation.mutate({ name: newCategoryName });
+  };
+
+  const handleSaveProduct = (productData) => {
+    addProductMutation.mutate(productData);
+  };
+
+  const handleSaveDebtor = (e) => {
+    e.preventDefault();
+    addDebtorMutation.mutate({
+      name: debtorName,
+      value: parseFloat(debtorValue),
+      dueDate: debtorDueDate,
+    });
+  };
+
+  const navItems = [
+    { to: 'stock', label: 'Estoque', icon: Boxes },
+    { to: 'debtors', label: 'Caderneta', icon: BookOpen },
+    { to: 'categories', label: 'Categorias', icon: Tags },
+    ...(user?.role === 'ADMIN' ? [{ to: 'users', label: 'Usuários', icon: UsersIcon }] : []),
+  ];
+
+  const userInitials = getInitials(user?.name, user?.username);
+
   return (
-    <div className="dashboard-container">
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-      <header>
-        <div className="logo-container">
-          <div className="logo">
-            <div className="package">
-              <Package color="white" size={33} />
-            </div>
-            <div className="logo-text">
-              <h1>Gerenciamento de Estoque</h1>
-              <p>Sistema de controle de produtos e inventário</p>
-            </div>
+    <div className="min-h-screen bg-[var(--ledger-bg)] text-[var(--ledger-ink)] lg:flex">
+      <ToastContainer position="top-right" autoClose={3000} theme="light" />
+
+      {/* Desktop Sidebar (>= lg) */}
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col bg-[var(--ledger-sidebar-bg)] text-stone-100 border-r border-white/10">
+        {/* Brand */}
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-400/25">
+            <PackageCheck className="size-5" />
           </div>
-          <div className="header-actions">
-            <button
-              type="button"
-              className="header-action-btn"
-              onClick={() => setIsMovementsOpen(true)}
-              title="Histórico de movimentações"
-            >
-              <History size={18} />
-              <span>Histórico</span>
-            </button>
-            <button
-              type="button"
-              className="header-action-btn"
-              onClick={() => setIsProfileOpen(true)}
-              title="Meu Perfil"
-            >
-              <User size={18} />
-              <span>{user?.name || 'Perfil'}</span>
-            </button>
-            <button type="button" className="logout-button" onClick={handleLogout} title="Sair do sistema">
-              <LogOut color="black" />
-            </button>
+          <div className="min-w-0">
+            <h1 className="truncate text-[0.95rem] font-bold tracking-tight text-white">
+              Estoque &amp; Caderneta
+            </h1>
+            <p className="truncate text-[0.7rem] font-medium uppercase tracking-widest text-stone-400">
+              Painel Operacional
+            </p>
           </div>
         </div>
 
-        <div className="stats-group">
-          <div className="stat-card">
-            <div>
-              <p>Total de Produtos</p>
-              <span>{summary.totalProduct}</span>
-            </div>
-            <div className="icon-wrapper blue">
-              <Package size={28} />
+        {/* Navigation */}
+        <div className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
+          <div>
+            <p className="px-3 pb-2 text-[0.68rem] font-semibold uppercase tracking-widest text-stone-400">
+              Módulos
+            </p>
+            <nav className="space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/25'
+                          : 'text-stone-300 hover:bg-white/[0.06] hover:text-white'
+                      }`
+                    }
+                  >
+                    <Icon className="size-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Quick Actions */}
+          <div>
+            <p className="px-3 pb-2 text-[0.68rem] font-semibold uppercase tracking-widest text-stone-400">
+              Ações Rápidas
+            </p>
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => handleOpenModal('addProduct')}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[0.84rem] font-medium text-stone-300 transition-colors hover:bg-white/[0.06] hover:text-white"
+              >
+                <Plus className="size-4 text-emerald-400" />
+                <span>Novo Produto</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenModal('addPayment')}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[0.84rem] font-medium text-stone-300 transition-colors hover:bg-white/[0.06] hover:text-white"
+              >
+                <Plus className="size-4 text-amber-400" />
+                <span>Novo Cliente</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenModal('addCategory')}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[0.84rem] font-medium text-stone-300 transition-colors hover:bg-white/[0.06] hover:text-white"
+              >
+                <Plus className="size-4 text-stone-400" />
+                <span>Nova Categoria</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMovementsOpen(true)}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[0.84rem] font-medium text-stone-300 transition-colors hover:bg-white/[0.06] hover:text-white"
+              >
+                <History className="size-4 text-sky-400" />
+                <span>Histórico de Estoque</span>
+              </button>
             </div>
           </div>
-          <div className="stat-card">
-            <div>
-              <p>Estoque Baixo</p>
-              <span className="yellow-text">{summary.lowStock}</span>
+        </div>
+
+        {/* User Footer */}
+        <div className="border-t border-white/10 p-3.5">
+          <div className="rounded-xl bg-white/[0.04] p-3 ring-1 ring-white/10">
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 font-mono-tabular text-xs font-bold text-emerald-300">
+                {userInitials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">
+                  {user?.name || user?.username}
+                </p>
+                <p className="truncate font-mono-tabular text-[0.68rem] uppercase tracking-wider text-stone-400">
+                  {user?.role || 'USER'}
+                </p>
+              </div>
             </div>
-            <div className="icon-wrapper yellow">
-              <CircleAlert size={28} />
+            <div className="mt-3 grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsProfileOpen(true)}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs font-medium text-stone-200 transition-colors hover:bg-white/10"
+              >
+                <UserCog className="size-3.5" />
+                <span>Perfil</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-red-400/20 bg-red-500/10 px-2.5 py-1.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/20"
+              >
+                <LogOut className="size-3.5" />
+                <span>Sair</span>
+              </button>
             </div>
           </div>
-          <div className="stat-card">
-            <div>
-              <p>Sem Estoque</p>
-              <span className="red-text">{summary.noStock}</span>
-            </div>
-            <div className="icon-wrapper red">
-              <X size={28} />
-            </div>
+        </div>
+      </aside>
+
+      {/* Mobile Compact Topbar (< lg) */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[var(--ledger-sidebar-bg)] px-4 py-3 text-white lg:hidden">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
+            <PackageCheck className="size-4" />
           </div>
-          <div className="stat-card">
-            <div>
-              <p>Valor em Estoque</p>
-              <span className="green-text">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                  summary.totalSaleValue ?? 0
-                )}
-              </span>
-              <small className="stat-card-subvalue">
-                Custo:{' '}
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                  summary.totalStockValue ?? 0
-                )}
-              </small>
-            </div>
-            <div className="icon-wrapper green">
-              <CircleDollarSign size={28} />
-            </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold tracking-tight">Estoque &amp; Caderneta</p>
           </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setIsMovementsOpen(true)}
+            title="Histórico de Estoque"
+            aria-label="Histórico de Estoque"
+            className="flex size-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-stone-200 hover:bg-white/10"
+          >
+            <History className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsProfileOpen(true)}
+            title="Meu Perfil"
+            aria-label="Meu Perfil"
+            className="flex size-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-stone-200 hover:bg-white/10"
+          >
+            <UserCog className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            title="Sair"
+            aria-label="Sair"
+            className="flex size-9 items-center justify-center rounded-lg border border-red-400/20 bg-red-500/10 text-red-300 hover:bg-red-500/20"
+          >
+            <LogOut className="size-4" />
+          </button>
         </div>
       </header>
 
-      <main>
-        <nav>
-          <div className="navigate-container">
-            <NavLink to="/dashboard/categories" className="navigate-button">
-              <Tag size={17} />
-              Categorias
-            </NavLink>
-            <NavLink to="/dashboard/stock" className="navigate-button">
-              <Package size={17} />
-              Estoque
-            </NavLink>
-            <NavLink to="/dashboard/debtors" className="navigate-button">
-              <CircleDollarSign size={17} />
-              Caderneta
-            </NavLink>
-            {user?.role === 'ADMIN' && (
-              <NavLink to="/dashboard/users" className="navigate-button">
-                <UsersRound size={17} />
-                Usuários
+      {/* Main Content Area */}
+      <div className="flex-1 lg:pl-64">
+        <main className="mx-auto w-full max-w-[1380px] px-4 py-5 pb-24 sm:px-6 lg:px-8 lg:py-8 lg:pb-10">
+          <Outlet
+            context={{
+              summary,
+              openModal: handleOpenModal,
+              openMovements: () => setIsMovementsOpen(true),
+            }}
+          />
+        </main>
+      </div>
+
+      {/* Mobile Bottom Navigation Bar (< lg) */}
+      <nav
+        aria-label="Navegação principal"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--ledger-border)] bg-[var(--ledger-surface)]/95 backdrop-blur-md lg:hidden"
+      >
+        <div className={`grid ${user?.role === 'ADMIN' ? 'grid-cols-4' : 'grid-cols-3'} h-16`}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `flex flex-col items-center justify-center gap-1 text-[0.7rem] font-semibold transition-colors ${
+                    isActive
+                      ? 'text-[var(--ledger-accent)]'
+                      : 'text-[var(--ledger-ink-subtle)] hover:text-[var(--ledger-ink)]'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${
+                        isActive ? 'bg-[var(--ledger-accent-soft)]' : ''
+                      }`}
+                    >
+                      <Icon className="size-4" />
+                    </span>
+                    <span>{item.label}</span>
+                  </>
+                )}
               </NavLink>
-            )}
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Shared Creation Modals */}
+      <Modal
+        isOpen={activeModal === 'addCategory'}
+        onClose={handleCloseModal}
+        title="Adicionar Nova Categoria"
+      >
+        <form className="ledger-form" onSubmit={handleSaveCategory}>
+          <div className="ledger-field">
+            <label htmlFor="categoryName">Nome da Categoria</label>
+            <input
+              id="categoryName"
+              className="ledger-input"
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="Ex: Bebidas, Vestuário..."
+              required
+              autoFocus
+            />
           </div>
-        </nav>
-
-        <div className="content-area">
-          <Outlet />
-
-          <div className="fab-container">
-            {isMenuOpen && (
-              <div className="fab-options">
-                <button type="button" onClick={() => handleOpenModal('addCategory')}>
-                  Cadastro de categorias
-                  <div className="fab-icon-wrapper">
-                    <Tag size={20} />
-                  </div>
-                </button>
-                <button type="button" onClick={() => handleOpenModal('addProduct')}>
-                  Cadastro de estoque
-                  <div className="fab-icon-wrapper">
-                    <Package size={20} />
-                  </div>
-                </button>
-                <button type="button" onClick={() => handleOpenModal('addPayment')}>
-                  Cadastro de pendentes
-                  <div className="fab-icon-wrapper">
-                    <CircleDollarSign size={20} />
-                  </div>
-                </button>
-              </div>
-            )}
+          <div className="ledger-form-actions">
+            <button type="button" className="ledger-btn-secondary" onClick={handleCloseModal}>
+              Cancelar
+            </button>
             <button
-              type="button"
-              className="fab-button"
-              onClick={() => setMenuOpen(!isMenuOpen)}
-              aria-label="Abrir menu de cadastro rápido"
+              type="submit"
+              className="ledger-btn-primary"
+              disabled={addCategoryMutation.isPending}
             >
-              <Plus size={25} />
+              {addCategoryMutation.isPending ? 'Salvando...' : 'Salvar Categoria'}
             </button>
           </div>
+        </form>
+      </Modal>
 
-          <Modal isOpen={activeModal === 'addCategory'} onClose={handleCloseModal}>
-            <form
-              className="add-container"
-              onSubmit={(e) => {
-                e.preventDefault();
-                addCategoryMutation.mutate(categoryName);
-              }}
-            >
-              <h2>Cadastro de categorias</h2>
-              <div className="add-inputs-wrapper">
-                <label htmlFor="new-category-name">Nome da categoria*</label>
-                <input
-                  id="new-category-name"
-                  type="text"
-                  placeholder="Ex: Refrigerantes, Biscoitos, Higiene..."
-                  value={categoryName}
-                  onChange={(e) => setCategoryName(e.target.value)}
-                  required
-                />
-              </div>
-              <button className="add-button" type="submit" disabled={addCategoryMutation.isPending}>
-                <Tag size={20} />
-                {addCategoryMutation.isPending ? 'Cadastrando...' : 'Cadastrar'}
-              </button>
-            </form>
-          </Modal>
+      <Modal
+        isOpen={activeModal === 'addProduct'}
+        onClose={handleCloseModal}
+        title="Adicionar Novo Produto"
+      >
+        <AddProductForm categories={categories} onSave={handleSaveProduct} />
+      </Modal>
 
-          <Modal isOpen={activeModal === 'addProduct'} onClose={handleCloseModal}>
-            <AddProductForm
-              categories={categories}
-              onSave={(productData) => addProductMutation.mutateAsync(productData)}
+      <Modal
+        isOpen={activeModal === 'addPayment'}
+        onClose={handleCloseModal}
+        title="Adicionar Novo Cliente"
+      >
+        <form className="ledger-form" onSubmit={handleSaveDebtor}>
+          <div className="ledger-field">
+            <label htmlFor="debtorName">Nome do Cliente</label>
+            <input
+              id="debtorName"
+              className="ledger-input"
+              type="text"
+              value={debtorName}
+              onChange={(e) => setDebtorName(e.target.value)}
+              placeholder="Ex: João da Silva"
+              required
+              autoFocus
             />
-          </Modal>
-
-          <Modal isOpen={activeModal === 'addPayment'} onClose={handleCloseModal}>
-            <form
-              className="add-container"
-              onSubmit={(e) => {
-                e.preventDefault();
-                addDebtorMutation.mutate({
-                  name: newDebtorClient,
-                  description: newDebtorDescription,
-                  value: parseFloat(newDebtorValue),
-                });
-              }}
-            >
-              <h2>Cadastro de pagamentos pendentes</h2>
-              <div className="add-inputs-wrapper">
-                <label htmlFor="new-debtor-client">Nome do cliente*</label>
+          </div>
+          <div className="ledger-form-row">
+            <div className="ledger-field">
+              <label htmlFor="debtorValue">Valor Devido</label>
+              <div className="ledger-input-affix">
+                <span className="affix-prefix">R$</span>
                 <input
-                  id="new-debtor-client"
-                  type="text"
-                  placeholder="Ex: Maria"
-                  value={newDebtorClient}
-                  onChange={(e) => setNewDebtorClient(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="add-inputs-wrapper">
-                <label htmlFor="new-debtor-description">Descrição</label>
-                <input
-                  id="new-debtor-description"
-                  type="text"
-                  placeholder="Ex: 1 Coca Cola 1L, 4 Biscoitos Amori..."
-                  value={newDebtorDescription}
-                  onChange={(e) => setNewDebtorDescription(e.target.value)}
-                />
-              </div>
-              <div className="add-inputs-wrapper">
-                <label htmlFor="new-debtor-value">Valor*</label>
-                <input
-                  id="new-debtor-value"
+                  id="debtorValue"
+                  className="ledger-input mono"
                   type="number"
-                  placeholder="Valor maior ou igual a 0"
-                  value={newDebtorValue}
-                  onChange={(e) => setNewDebtorValue(e.target.value)}
-                  required
-                  min="0"
                   step="0.01"
+                  min="0.01"
+                  value={debtorValue}
+                  onChange={(e) => setDebtorValue(e.target.value)}
+                  placeholder="0.00"
+                  required
                 />
               </div>
-              <button className="add-button" type="submit" disabled={addDebtorMutation.isPending}>
-                <CircleDollarSign size={20} />
-                {addDebtorMutation.isPending ? 'Cadastrando...' : 'Cadastrar'}
-              </button>
-            </form>
-          </Modal>
+            </div>
+            <div className="ledger-field">
+              <label htmlFor="debtorDueDate">Data de Vencimento</label>
+              <input
+                id="debtorDueDate"
+                className="ledger-input mono"
+                type="date"
+                value={debtorDueDate}
+                onChange={(e) => setDebtorDueDate(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <div className="ledger-form-actions">
+            <button type="button" className="ledger-btn-secondary" onClick={handleCloseModal}>
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="ledger-btn-primary"
+              disabled={addDebtorMutation.isPending}
+            >
+              {addDebtorMutation.isPending ? 'Salvando...' : 'Salvar Lançamento'}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
-          <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
-          <StockMovementsModal isOpen={isMovementsOpen} onClose={() => setIsMovementsOpen(false)} />
-        </div>
-      </main>
+      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+      <StockMovementsModal isOpen={isMovementsOpen} onClose={() => setIsMovementsOpen(false)} />
     </div>
   );
 }
+
+export default Dashboard;

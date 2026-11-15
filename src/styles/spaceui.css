@@ -1,0 +1,26 @@
+/*
+ * Space UI — MIT License
+ * Copyright (c) 2026 Space UI (https://github.com/usespaceui/ui)
+ * Isolated library setup stylesheet (from devlibs get_library_setup)
+ */
+.spaceui-theme {
+  color-scheme: light;
+  --background: var(--color-white);
+  --foreground: var(--color-zinc-950);
+  --muted: var(--color-zinc-100);
+  --muted-foreground: var(--color-zinc-600);
+  --card: var(--color-white);
+  --card-foreground: var(--color-zinc-950);
+  --border: --alpha(var(--color-black) / 8%);
+  --pill-active-bg: --alpha(var(--color-black) / 10%);
+  --popover: var(--color-white);
+  --popover-foreground: var(--color-zinc-950);
+  --primary: var(--color-zinc-950);
+  --primary-foreground: var(--color-white);
+  --secondary: var(--color-zinc-100);
+  --secondary-foreground: var(--color-zinc-700);
+  --accent: var(--color-zinc-100);
+  --accent-foreground: var(--color-zinc-950);
+  --input: --alpha(var(--color-black) / 8%);
+  --ring: transparent;
+}

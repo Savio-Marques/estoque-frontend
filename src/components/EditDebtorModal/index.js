@@ -2,83 +2,94 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../Modal';
 import './style.css';
 
-export default function EditDebtorModal({ debtor, onSave, onClose }) {
-  const [formData, setFormData] = useState({ ...debtor });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+function EditDebtorModal({ debtor, onSave, onClose }) {
+  const [formData, setFormData] = useState({ name: '', value: '', dueDate: '' });
 
   useEffect(() => {
-    setFormData({ ...debtor });
+    if (debtor) {
+      setFormData({
+        name: debtor.name || '',
+        value: debtor.value || '',
+        dueDate: debtor.dueDate ? debtor.dueDate.split('T')[0] : '',
+      });
+    }
   }, [debtor]);
+
+  if (!debtor) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      await onSave({
-        ...formData,
-        value: parseFloat(formData.value),
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    onSave({
+      ...formData,
+      value: parseFloat(formData.value),
+    });
   };
 
   return (
-    <Modal isOpen={true} onClose={onClose}>
-      <form className="editDebtor-form" onSubmit={handleSubmit}>
-        <h2>Editar Pagamento Pendente</h2>
-
-        <div className="editDebtor-inputs">
-          <label htmlFor="edit-debtor-name">Cliente*</label>
+    <Modal isOpen={Boolean(debtor)} onClose={onClose} title="Editar Lançamento">
+      <form className="ledger-form" onSubmit={handleSubmit}>
+        <div className="ledger-field">
+          <label htmlFor="edit-debtor-name">Nome do Cliente</label>
           <input
             id="edit-debtor-name"
+            className="ledger-input"
             type="text"
             name="name"
-            value={formData.name || ''}
+            value={formData.name}
             onChange={handleChange}
             required
           />
         </div>
 
-        <div className="editDebtor-inputs">
-          <label htmlFor="edit-debtor-description">Descrição</label>
-          <input
-            id="edit-debtor-description"
-            type="text"
-            name="description"
-            value={formData.description || ''}
-            onChange={handleChange}
-          />
+        <div className="ledger-form-row">
+          <div className="ledger-field">
+            <label htmlFor="edit-debtor-value">Valor Devido</label>
+            <div className="ledger-input-affix">
+              <span className="affix-prefix">R$</span>
+              <input
+                id="edit-debtor-value"
+                className="ledger-input mono"
+                type="number"
+                step="0.01"
+                min="0"
+                name="value"
+                value={formData.value}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="ledger-field">
+            <label htmlFor="edit-debtor-due">Data de Vencimento</label>
+            <input
+              id="edit-debtor-due"
+              className="ledger-input mono"
+              type="date"
+              name="dueDate"
+              value={formData.dueDate}
+              onChange={handleChange}
+              required
+            />
+          </div>
         </div>
 
-        <div className="editDebtor-inputs">
-          <label htmlFor="edit-debtor-value">Valor*</label>
-          <input
-            id="edit-debtor-value"
-            type="number"
-            name="value"
-            step="0.01"
-            value={formData.value || ''}
-            onChange={handleChange}
-            required
-            min="0"
-          />
-        </div>
-
-        <div className="modal-actions-debtors">
-          <button type="submit" className="save-button-debtors" disabled={isSubmitting}>
-            {isSubmitting ? 'Salvando...' : 'Salvar'}
-          </button>
-          <button type="button" onClick={onClose} className="cancel-button-debtors">
+        <div className="ledger-form-actions">
+          <button type="button" className="ledger-btn-secondary" onClick={onClose}>
             Cancelar
+          </button>
+          <button type="submit" className="ledger-btn-primary">
+            Salvar Alterações
           </button>
         </div>
       </form>
     </Modal>
   );
 }
+
+export default EditDebtorModal;
