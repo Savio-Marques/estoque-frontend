@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Package, LogOut, CircleAlert, X, CircleDollarSign, Plus, Tag } from 'lucide-react';
+import { Package, LogOut, CircleAlert, X, CircleDollarSign, Plus, Tag, History, User } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import AddProductForm from '../../components/AddProductForm';
 import Modal from '../../components/Modal';
+import ProfileModal from '../../components/ProfileModal';
+import StockMovementsModal from '../../components/StockMovementsModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProductSummary, useProductMutations } from '../../hooks/useProducts';
 import { useCategories, useCategoryMutations } from '../../hooks/useCategories';
@@ -14,10 +16,12 @@ import './style.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMovementsOpen, setIsMovementsOpen] = useState(false);
 
   const [categoryName, setCategoryName] = useState('');
   const [newDebtorClient, setNewDebtorClient] = useState('');
@@ -25,7 +29,9 @@ export default function Dashboard() {
   const [newDebtorValue, setNewDebtorValue] = useState('');
 
   // Busca apenas o sumário no topo do Dashboard; categorias só são buscadas aqui se abrir o modal de novo produto
-  const { data: summary = { totalProduct: 0, lowStock: 0, noStock: 0 } } = useProductSummary();
+  const {
+    data: summary = { totalProduct: 0, lowStock: 0, noStock: 0, totalStockValue: 0, totalSaleValue: 0 },
+  } = useProductSummary();
   const { data: categories = [] } = useCategories({ enabled: activeModal === 'addProduct' });
 
   const { addCategoryMutation } = useCategoryMutations({
@@ -89,9 +95,29 @@ export default function Dashboard() {
               <p>Sistema de controle de produtos e inventário</p>
             </div>
           </div>
-          <button type="button" className="logout-button" onClick={handleLogout} title="Sair do sistema">
-            <LogOut color="black" />
-          </button>
+          <div className="header-actions">
+            <button
+              type="button"
+              className="header-action-btn"
+              onClick={() => setIsMovementsOpen(true)}
+              title="Histórico de movimentações"
+            >
+              <History size={18} />
+              <span>Histórico</span>
+            </button>
+            <button
+              type="button"
+              className="header-action-btn"
+              onClick={() => setIsProfileOpen(true)}
+              title="Meu Perfil"
+            >
+              <User size={18} />
+              <span>{user?.name || 'Perfil'}</span>
+            </button>
+            <button type="button" className="logout-button" onClick={handleLogout} title="Sair do sistema">
+              <LogOut color="black" />
+            </button>
+          </div>
         </div>
 
         <div className="stats-group">
@@ -120,6 +146,25 @@ export default function Dashboard() {
             </div>
             <div className="icon-wrapper red">
               <X size={28} />
+            </div>
+          </div>
+          <div className="stat-card">
+            <div>
+              <p>Valor em Estoque</p>
+              <span className="green-text">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                  summary.totalSaleValue ?? 0
+                )}
+              </span>
+              <small className="stat-card-subvalue">
+                Custo:{' '}
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                  summary.totalStockValue ?? 0
+                )}
+              </small>
+            </div>
+            <div className="icon-wrapper green">
+              <CircleDollarSign size={28} />
             </div>
           </div>
         </div>
@@ -266,6 +311,9 @@ export default function Dashboard() {
               </button>
             </form>
           </Modal>
+
+          <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+          <StockMovementsModal isOpen={isMovementsOpen} onClose={() => setIsMovementsOpen(false)} />
         </div>
       </main>
     </div>

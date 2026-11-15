@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Banknote, UsersRound, SquarePen, CircleCheck } from 'lucide-react';
 import EditDebtorModal from '../../components/EditDebtorModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import Modal from '../../components/Modal';
 import useDebounce from '../../hooks/useDebounce';
 import { useDebtors, useDebtorMutations } from '../../hooks/useDebtors';
 import './style.css';
@@ -9,6 +10,8 @@ import './style.css';
 export default function Debtors() {
   const [debtorSearchTerm, setDebtorSearchTerm] = useState('');
   const [editingDebtor, setEditingDebtor] = useState(null);
+  const [payingDebtor, setPayingDebtor] = useState(null);
+  const [partialAmount, setPartialAmount] = useState('');
   const [confirmationProps, setConfirmationProps] = useState({ isOpen: false });
 
   const debouncedDebtorSearchTerm = useDebounce(debtorSearchTerm, 500);
@@ -21,10 +24,23 @@ export default function Debtors() {
   const debtors = debtorData.debtorDTOList;
   const debtorSummary = debtorData.summaryDebtorsDTO;
 
-  const { updateDebtorMutation, markAsPaidMutation } = useDebtorMutations({
+  const { updateDebtorMutation, markAsPaidMutation, partialPayMutation } = useDebtorMutations({
     onUpdateSuccess: () => setEditingDebtor(null),
     onPaidSuccess: () => setConfirmationProps({ isOpen: false }),
+    onPartialPaySuccess: () => {
+      setPayingDebtor(null);
+      setPartialAmount('');
+    },
   });
+
+  const handlePartialPaySubmit = async (e) => {
+    e.preventDefault();
+    if (!payingDebtor) return;
+    await partialPayMutation.mutateAsync({
+      id: payingDebtor.id,
+      amount: parseFloat(partialAmount),
+    });
+  };
 
   const requestMarkAsPaidConfirmation = (debtor) => {
     setConfirmationProps({
@@ -134,6 +150,16 @@ export default function Debtors() {
                         </button>
                         <button
                           type="button"
+                          className="debtors-table-pay"
+                          onClick={() => {
+                            setPayingDebtor(debtor);
+                            setPartialAmount('');
+                          }}
+                        >
+                          <Banknote size={17} /> Abater
+                        </button>
+                        <button
+                          type="button"
                           className="debtors-table-check"
                           onClick={() => requestMarkAsPaidConfirmation(debtor)}
                         >
@@ -155,6 +181,47 @@ export default function Debtors() {
             onClose={() => setEditingDebtor(null)}
           />
         )}
+
+        <Modal
+          isOpen={Boolean(payingDebtor)}
+          onClose={() => setPayingDebtor(null)}
+          title="Abater Dívida"
+        >
+          {payingDebtor && (
+            <form className="partial-pay-form" onSubmit={handlePartialPaySubmit}>
+              <p className="partial-pay-info">
+                Devedor: <strong>{payingDebtor.name}</strong> — Dívida atual:{' '}
+                <strong>
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                    payingDebtor.value
+                  )}
+                </strong>
+              </p>
+              <div className="add-inputs-wrapper">
+                <label htmlFor="partial-pay-amount">Valor do abatimento (R$)*</label>
+                <input
+                  id="partial-pay-amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={payingDebtor.value}
+                  placeholder="Ex: 50.00"
+                  value={partialAmount}
+                  onChange={(e) => setPartialAmount(e.target.value)}
+                  required
+                />
+              </div>
+              <button
+                className="add-button"
+                type="submit"
+                disabled={partialPayMutation.isPending}
+              >
+                <Banknote size={18} />
+                {partialPayMutation.isPending ? 'Registrando...' : 'Confirmar Abatimento'}
+              </button>
+            </form>
+          )}
+        </Modal>
 
         <ConfirmationModal
           isOpen={confirmationProps.isOpen}

@@ -259,8 +259,139 @@ nav {
   background-color: #005fdb;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #f3f4f6;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.header-action-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.header-action-btn span {
+  display: none;
+}
+
+.green-text {
+  color: #16a34a;
+}
+
+.icon-wrapper.green {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+.stat-card-subvalue {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.add-inputs-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.movements-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.movements-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.movements-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 55vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.movement-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.movement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.movement-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.movement-date {
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.movement-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.movement-badge.green {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.movement-badge.yellow {
+  background-color: #fef9c3;
+  color: #a16207;
+}
+
+.movement-badge.red {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
 
 @media (min-width: 768px) {
+  .header-action-btn span {
+    display: inline;
+  }
   .stats-group {
     flex-direction: row;
     justify-content: center;

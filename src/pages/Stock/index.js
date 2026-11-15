@@ -10,6 +10,7 @@ import './style.css';
 export default function Stock() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stockFilter, setStockFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [editingProduct, setEditingProduct] = useState(null);
   const [confirmationProps, setConfirmationProps] = useState({ isOpen: false });
 
@@ -18,11 +19,10 @@ export default function Stock() {
   const { data: products = [], isLoading } = useProducts({
     searchTerm: debouncedSearchTerm,
     stockFilter,
+    categoryFilter,
   });
 
-  const { data: categories = [] } = useCategories({
-    enabled: Boolean(editingProduct),
-  });
+  const { data: categories = [] } = useCategories();
 
   const { updateProductMutation, deleteProductMutation } = useProductMutations({
     onUpdateSuccess: () => setEditingProduct(null),
@@ -52,26 +52,24 @@ export default function Stock() {
     });
   };
 
-  const statusReturn = (quantity) => {
+  const statusReturn = (quantity, minQuantity = 5) => {
+    const threshold = minQuantity ?? 5;
     if (quantity === 0) {
       return {
         icon: <X size={20} color="#D0021B" />,
         tag: <p className="product-status red">Sem estoque</p>,
       };
     }
-    if (quantity > 0 && quantity <= 5) {
+    if (quantity > 0 && quantity <= threshold) {
       return {
         icon: <CircleAlert size={20} color="#F5A623" />,
         tag: <p className="product-status yellow">Estoque baixo</p>,
       };
     }
-    if (quantity > 5) {
-      return {
-        icon: <CheckCircle size={20} color="#16A249" />,
-        tag: <p className="product-status green">Disponível</p>,
-      };
-    }
-    return { icon: null, tag: null };
+    return {
+      icon: <CheckCircle size={20} color="#16A249" />,
+      tag: <p className="product-status green">Disponível</p>,
+    };
   };
 
   return (
@@ -88,10 +86,24 @@ export default function Stock() {
             className="filter-dropdown"
             value={stockFilter}
             onChange={(e) => setStockFilter(e.target.value)}
+            aria-label="Filtrar por status do estoque"
           >
             <option value="all">Todos os produtos</option>
             <option value="low">Estoque Baixo</option>
             <option value="out_of_stock">Sem Estoque</option>
+          </select>
+          <select
+            className="filter-dropdown"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            aria-label="Filtrar por categoria"
+          >
+            <option value="">Todas as categorias</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -100,7 +112,7 @@ export default function Stock() {
         ) : products.length > 0 ? (
           <ul>
             {products.map((stock) => {
-              const statusResult = statusReturn(stock.qtd);
+              const statusResult = statusReturn(stock.qtd, stock.minQuantity);
               return (
                 <li key={stock.id} className="product-card-container">
                   <div className="product-card">
@@ -118,6 +130,24 @@ export default function Stock() {
                         <span className="product-stock-number">{`${stock.qtd} un.`}</span>
                       </div>
                     </div>
+                    {(stock.salePrice > 0 || stock.costPrice > 0) && (
+                      <div className="product-prices">
+                        <span className="product-price-item">
+                          Venda:{' '}
+                          <strong>
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                              stock.salePrice ?? 0
+                            )}
+                          </strong>
+                        </span>
+                        <span className="product-price-cost">
+                          Custo:{' '}
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                            stock.costPrice ?? 0
+                          )}
+                        </span>
+                      </div>
+                    )}
                     <div className="product-status-container">
                       <span>{statusResult.tag}</span>
                     </div>

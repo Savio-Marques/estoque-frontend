@@ -10,21 +10,26 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
     const storedUsername = localStorage.getItem('username');
+    const storedName = localStorage.getItem('userName');
 
     if (token) {
-      setUser({ username: storedUsername || 'Usuário' });
+      setUser({
+        username: storedUsername || 'Usuário',
+        name: storedName || storedUsername || 'Usuário',
+      });
     }
     setLoading(false);
   }, []);
 
   const login = async (username, password) => {
     const response = await api.post('auth/login', { username, password });
-    const token = response.data.token;
+    const { token, name } = response.data;
 
     localStorage.setItem('username', username);
+    if (name) localStorage.setItem('userName', name);
     localStorage.setItem('accessToken', token);
 
-    setUser({ username });
+    setUser({ username, name: name || username });
     return response.data;
   };
 
@@ -32,10 +37,16 @@ export const AuthProvider = ({ children }) => {
     await api.post('auth/register', { name, username, password });
   };
 
+  const updateUserName = (newName) => {
+    localStorage.setItem('userName', newName);
+    setUser((prev) => (prev ? { ...prev, name: newName } : prev));
+  };
+
   const logout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    localStorage.removeItem('userName');
     setUser(null);
   };
 
@@ -47,6 +58,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         register,
+        updateUserName,
         logout,
       }}
     >

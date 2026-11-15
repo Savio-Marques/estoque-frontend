@@ -204,6 +204,22 @@
   color: #666;
 }
 
+.product-prices {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: #374151;
+  margin-bottom: 0.6rem;
+  padding: 0.35rem 0.5rem;
+  background-color: #f8fafc;
+  border-radius: 6px;
+}
+
+.product-price-cost {
+  color: #6b7280;
+}
+
 @media (min-width: 768px) {
   .stock-container {
     width: 96%;

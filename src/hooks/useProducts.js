@@ -7,14 +7,38 @@ export function useProductSummary() {
     queryKey: ['summary'],
     queryFn: async () => {
       const res = await api.get('/product/summary');
-      return res.data || { totalProduct: 0, lowStock: 0, noStock: 0 };
+      return (
+        res.data || {
+          totalProduct: 0,
+          lowStock: 0,
+          noStock: 0,
+          totalStockValue: 0,
+          totalSaleValue: 0,
+        }
+      );
     },
   });
 }
 
-export function useProducts({ searchTerm = '', stockFilter = 'all', enabled = true } = {}) {
+export function useStockMovements({ enabled = false } = {}) {
   return useQuery({
-    queryKey: ['products', searchTerm, stockFilter],
+    queryKey: ['movements'],
+    enabled,
+    queryFn: async () => {
+      const res = await api.get('/product/movements');
+      return res.data || [];
+    },
+  });
+}
+
+export function useProducts({
+  searchTerm = '',
+  stockFilter = 'all',
+  categoryFilter = 'all',
+  enabled = true,
+} = {}) {
+  return useQuery({
+    queryKey: ['products', searchTerm, stockFilter, categoryFilter],
     enabled,
     queryFn: async () => {
       let list = [];
@@ -24,30 +48,37 @@ export function useProducts({ searchTerm = '', stockFilter = 'all', enabled = tr
         const res = await api.get(`/product/pesquisar?${params.toString()}`);
         list = res.data.content || res.data || [];
 
-        // Combina a busca por nome com o filtro de estoque selecionado
         if (stockFilter === 'low') {
-          return list.filter((p) => p.qtd > 0 && p.qtd <= 5);
+          list = list.filter((p) => p.qtd > 0 && p.qtd <= (p.minQuantity ?? 5));
+        } else if (stockFilter === 'out_of_stock') {
+          list = list.filter((p) => p.qtd === 0);
         }
-        if (stockFilter === 'out_of_stock') {
-          return list.filter((p) => p.qtd === 0);
+      } else {
+        switch (stockFilter) {
+          case 'low': {
+            const res = await api.get('/product/lowStock');
+            list = res.data.content || res.data || [];
+            break;
+          }
+          case 'out_of_stock': {
+            const res = await api.get('/product/noStock');
+            list = res.data.content || res.data || [];
+            break;
+          }
+          default: {
+            const res = await api.get('/product');
+            list = res.data.content || res.data || [];
+            break;
+          }
         }
-        return list;
       }
 
-      switch (stockFilter) {
-        case 'low': {
-          const res = await api.get('/product/lowStock');
-          return res.data.content || res.data || [];
-        }
-        case 'out_of_stock': {
-          const res = await api.get('/product/noStock');
-          return res.data.content || res.data || [];
-        }
-        default: {
-          const res = await api.get('/product');
-          return res.data.content || res.data || [];
-        }
+      if (categoryFilter && categoryFilter !== 'all') {
+        const catId = parseInt(categoryFilter, 10);
+        list = list.filter((p) => p.categoryId === catId);
       }
+
+      return list;
     },
   });
 }
@@ -60,6 +91,7 @@ export function useProductMutations({ onAddSuccess, onUpdateSuccess, onDeleteSuc
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['summary'] });
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
       toast.success('Produto adicionado com sucesso!');
       if (onAddSuccess) onAddSuccess();
     },
@@ -100,6 +132,7 @@ export function useProductMutations({ onAddSuccess, onUpdateSuccess, onDeleteSuc
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['summary'] });
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
     },
   });
 
@@ -108,6 +141,7 @@ export function useProductMutations({ onAddSuccess, onUpdateSuccess, onDeleteSuc
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['summary'] });
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
       toast.success('Produto deletado com sucesso!');
       if (onDeleteSuccess) onDeleteSuccess();
     },

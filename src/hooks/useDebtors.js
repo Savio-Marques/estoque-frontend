@@ -45,6 +45,22 @@ export function useDebtorMutations({ onAddSuccess, onUpdateSuccess, onPaidSucces
     },
   });
 
+  const partialPayMutation = useMutation({
+    mutationFn: ({ id, amount }) => api.patch(`/debtor/${id}/pay`, { amount }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['debtors'] });
+      toast.success(
+        res.status === 204
+          ? 'Dívida quitada integralmente!'
+          : 'Abatimento registrado com sucesso!'
+      );
+      if (onPaidSuccess) onPaidSuccess();
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Falha ao registrar abatimento.');
+    },
+  });
+
   const markAsPaidMutation = useMutation({
     mutationFn: (id) => api.delete(`/debtor/${id}`),
     onSuccess: () => {
@@ -60,6 +76,7 @@ export function useDebtorMutations({ onAddSuccess, onUpdateSuccess, onPaidSucces
   return {
     addDebtorMutation,
     updateDebtorMutation,
+    partialPayMutation,
     markAsPaidMutation,
   };
 }
