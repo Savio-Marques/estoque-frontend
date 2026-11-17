@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { LogOut } from 'lucide-react';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import Modal from '../Modal';
 
-function ProfileModal({ isOpen, onClose }) {
+function ProfileModal({ isOpen, onClose, onLogout }) {
   const { user, updateUserName } = useAuth();
   const [name, setName] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -128,6 +129,24 @@ function ProfileModal({ isOpen, onClose }) {
             </div>
           </div>
         </div>
+
+        {onLogout && (
+          <div className="ledger-danger-zone">
+            <span>Encerrar sessão neste dispositivo</span>
+            <button
+              type="button"
+              className="ledger-btn-danger"
+              disabled={isSaving}
+              onClick={() => {
+                onClose();
+                onLogout();
+              }}
+            >
+              <LogOut className="size-4" />
+              <span>Sair da Conta</span>
+            </button>
+          </div>
+        )}
 
         <div className="ledger-form-actions">
           <button type="button" className="ledger-btn-secondary" onClick={onClose} disabled={isSaving}>

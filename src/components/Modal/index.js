@@ -7,7 +7,6 @@ import {
   DialogDescription,
   DialogBody,
 } from '@/components/ui/dialog';
-import './style.css';
 
 function Modal({ isOpen, onClose, title, description, size = 'default', children }) {
   return (

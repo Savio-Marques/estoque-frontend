@@ -28,7 +28,6 @@ import { Spinner } from '@/components/ui/spinner';
 import EditDebtorModal from '../../components/EditDebtorModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Modal from '../../components/Modal';
-import './style.css';
 
 const formatCurrency = (value) =>
   Number(value || 0).toLocaleString('pt-BR', {
@@ -189,13 +188,10 @@ function Debtors() {
       {/* Editorial Header */}
       <div className="flex flex-col gap-4 border-b border-[var(--ledger-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="font-mono-tabular text-[0.72rem] font-semibold uppercase tracking-widest text-[var(--ledger-amber)]">
-            Contas a Receber
-          </span>
-          <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-[1.75rem]">
+          <h2 className="text-2xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-[1.75rem]">
             Caderneta de Clientes
           </h2>
-          <p className="mt-1 text-sm text-[var(--ledger-ink-muted)]">
+          <p className="mt-1 hidden text-sm text-[var(--ledger-ink-muted)] sm:block">
             Consulte os itens anotados, registre abatimentos parciais e quite saldos em aberto.
           </p>
         </div>

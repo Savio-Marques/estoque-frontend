@@ -11,7 +11,6 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
-import './style.css';
 
 function ConfirmationModal({ isOpen, onClose, onConfirm, title, children, confirmButtonClass }) {
   const isPositive = confirmButtonClass === 'confirm-button-paid';

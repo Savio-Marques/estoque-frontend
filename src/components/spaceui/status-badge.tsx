@@ -9,7 +9,7 @@ import { type VariantProps, cva } from 'class-variance-authority'
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-export const badgeVariants = cva('rounded-xl flex h-auto md:h-full items-center font-semibold transition-colors', {
+export const badgeVariants = cva('rounded-md inline-flex h-auto items-center font-semibold transition-colors', {
   variants: {
     variant: {
       default: 'border-transparent bg-muted text-foreground',
@@ -188,19 +188,23 @@ export function StatusBadge({
   return (
     <div
       className={cn(
-        'inline-flex flex-wrap items-center gap-2 rounded-xl transition-colors',
+        'inline-flex items-center gap-1.5 rounded-md transition-colors',
         badgeVariants({ variant, size }),
         className,
       )}
       {...props}
     >
-      <Badge size={size} circle={!primaryText} className={innerBadgeStyle}>
-        <div className="flex items-center gap-2">
-          <IndicatorComponent />
-          {primaryText && <span className={cn('font-semibold', primaryTextClassName)}>{primaryText}</span>}
-        </div>
-      </Badge>
-      {props.children && <span className={cn('font-normal', secondaryTextClassName)}>{props.children}</span>}
+      <IndicatorComponent />
+      {primaryText && (
+        <span className={cn('font-semibold leading-none', primaryTextClassName)}>
+          {primaryText}
+        </span>
+      )}
+      {props.children && (
+        <span className={cn('font-semibold leading-none', secondaryTextClassName)}>
+          {props.children}
+        </span>
+      )}
     </div>
   )
 }

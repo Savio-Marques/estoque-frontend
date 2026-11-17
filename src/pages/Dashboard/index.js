@@ -29,7 +29,6 @@ import Modal from '../../components/Modal';
 import AddProductForm from '../../components/AddProductForm';
 import ProfileModal from '../../components/ProfileModal';
 import StockMovementsModal from '../../components/StockMovementsModal';
-import './style.css';
 
 const formatCurrency = (value) =>
   Number(value || 0).toLocaleString('pt-BR', {
@@ -327,15 +326,6 @@ function Dashboard() {
           >
             <UserCog className="size-4" />
           </button>
-          <button
-            type="button"
-            onClick={handleLogout}
-            title="Sair"
-            aria-label="Sair"
-            className="flex size-9 items-center justify-center rounded-lg border border-red-400/20 bg-red-500/10 text-red-300 hover:bg-red-500/20"
-          >
-            <LogOut className="size-4" />
-          </button>
         </div>
       </header>
 
@@ -604,7 +594,11 @@ function Dashboard() {
         </form>
       </Modal>
 
-      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+      <ProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        onLogout={handleLogout}
+      />
       <StockMovementsModal isOpen={isMovementsOpen} onClose={() => setIsMovementsOpen(false)} />
     </div>
   );

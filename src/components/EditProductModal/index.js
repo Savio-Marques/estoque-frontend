@@ -8,7 +8,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import Modal from '../Modal';
-import './style.css';
 
 function EditProductModal({ product, categories = [], onSave, onClose, onDeleteRequest, isPending = false }) {
   const [formData, setFormData] = useState({

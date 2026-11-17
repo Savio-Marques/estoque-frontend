@@ -7,7 +7,6 @@ import { GridPattern } from '@/components/velora/grid-pattern';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import './style.css';
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -35,7 +34,7 @@ function Login() {
   return (
     <div className="velora-theme min-h-screen w-full grid grid-cols-1 lg:grid-cols-12 bg-[var(--ledger-bg)] text-[var(--ledger-ink)]">
       {/* Left Column: Clean Editorial Login Form */}
-      <section className="pt-safe-top lg:col-span-5 flex flex-col justify-between px-6 py-8 sm:px-12 lg:px-14 bg-[var(--ledger-surface)] border-r border-[var(--ledger-border)]">
+      <section className="pt-safe-top lg:col-span-5 flex flex-col justify-between px-6 py-8 sm:px-12 lg:px-14 bg-[var(--ledger-surface)] lg:border-r lg:border-[var(--ledger-border)]">
         <div className="flex items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-xl bg-[var(--ledger-sidebar-bg)] text-white shadow-sm">
             <PackageCheck className="size-5 text-emerald-400" />
@@ -184,28 +183,28 @@ function Login() {
             <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-md">
               <PackageCheck className="size-5 text-emerald-400" />
               <p className="mt-3 text-sm font-semibold text-white">Inventário Vivo</p>
-              <p className="mt-1 text-xs leading-relaxed text-stone-400">
+              <p className="mt-1 text-xs leading-relaxed text-stone-300">
                 Alertas automáticos de estoque baixo e ruptura.
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-md">
               <BookOpenCheck className="size-5 text-amber-400" />
               <p className="mt-3 text-sm font-semibold text-white">Caderneta Digital</p>
-              <p className="mt-1 text-xs leading-relaxed text-stone-400">
+              <p className="mt-1 text-xs leading-relaxed text-stone-300">
                 Abatimentos parciais e quitação com rastreio.
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-md">
               <ShieldCheck className="size-5 text-emerald-300" />
               <p className="mt-3 text-sm font-semibold text-white">Auditoria Completa</p>
-              <p className="mt-1 text-xs leading-relaxed text-stone-400">
+              <p className="mt-1 text-xs leading-relaxed text-stone-300">
                 Histórico cronológico de entradas e saídas.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="relative z-10 flex items-center gap-6 border-t border-white/10 pt-5 text-xs text-stone-400">
+        <div className="relative z-10 flex items-center gap-6 border-t border-white/10 pt-5 text-xs text-stone-300">
           <span>Operação multiusuário com controle por perfil</span>
           <span className="text-white/20">&bull;</span>
           <span className="font-mono-tabular">ADMIN / USER</span>

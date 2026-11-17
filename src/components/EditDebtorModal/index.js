@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../Modal';
-import './style.css';
 
 function EditDebtorModal({ debtor, onSave, onClose, isPending = false }) {
   const [formData, setFormData] = useState({ name: '', description: '', value: '' });

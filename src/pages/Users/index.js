@@ -12,7 +12,6 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import Modal from '../../components/Modal';
 import ConfirmationModal from '../../components/ConfirmationModal';
-import './style.css';
 
 const formatInteger = (value) => Math.round(Number(value || 0)).toLocaleString('pt-BR');
 
@@ -117,10 +116,7 @@ function Users() {
       {/* Editorial Header */}
       <div className="flex flex-col gap-4 border-b border-[var(--ledger-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <span className="font-mono-tabular text-[0.72rem] font-semibold uppercase tracking-widest text-[var(--ledger-accent)]">
-            Administração
-          </span>
-          <div className="mt-1 flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <h2 className="text-2xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-[1.75rem]">
               Gerenciar Usuários
             </h2>
@@ -137,7 +133,7 @@ function Users() {
               </div>
             )}
           </div>
-          <p className="mt-1 text-sm text-[var(--ledger-ink-muted)]">
+          <p className="mt-1 hidden text-sm text-[var(--ledger-ink-muted)] sm:block">
             Controle credenciais de acesso e permissões operacionais da equipe.
           </p>
         </div>
