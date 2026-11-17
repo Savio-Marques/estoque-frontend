@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   Boxes,
@@ -74,13 +75,37 @@ function Stock() {
   const outletContext = useOutletContext() || {};
   const { summary, openModal, openMovements } = outletContext;
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
 
   const [editingProduct, setEditingProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [stockFilter, setStockFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState(() => searchParams.get('category') || '');
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ledger_stock_view_mode');
+      if (saved === 'list' || saved === 'grid') return saved;
+    } catch (_e) {
+      // ignore storage errors
+    }
+    return typeof window !== 'undefined' && window.innerWidth >= 768 ? 'list' : 'grid';
+  });
+  const [pendingQuantities, setPendingQuantities] = useState({});
+
+  const debounceTimersRef = useRef({});
+  const pendingProductUpdatesRef = useRef({});
+  const baseQtdRef = useRef({});
+
+  const handleViewModeChange = (nextMode) => {
+    if (!nextMode) return;
+    setViewMode(nextMode);
+    try {
+      localStorage.setItem('ledger_stock_view_mode', nextMode);
+    } catch (_e) {
+      // ignore storage errors
+    }
+  };
 
   const [confirmationProps, setConfirmationProps] = useState({
     isOpen: false,
@@ -130,20 +155,107 @@ function Stock() {
     },
   });
 
+  const updateProductMutateRef = useRef(updateProductMutation.mutate);
+  updateProductMutateRef.current = updateProductMutation.mutate;
+
+  useEffect(() => {
+    const timers = debounceTimersRef.current;
+    const pending = pendingProductUpdatesRef.current;
+    const baseQtds = baseQtdRef.current;
+    return () => {
+      Object.keys(timers).forEach((id) => {
+        clearTimeout(timers[id]);
+        delete timers[id];
+      });
+      Object.keys(pending).forEach((id) => {
+        const payload = pending[id];
+        delete pending[id];
+        delete baseQtds[id];
+        if (payload) {
+          updateProductMutateRef.current(payload);
+        }
+      });
+    };
+  }, []);
+
+  const clearPendingProductState = (productId) => {
+    if (debounceTimersRef.current[productId]) {
+      clearTimeout(debounceTimersRef.current[productId]);
+      delete debounceTimersRef.current[productId];
+    }
+    delete pendingProductUpdatesRef.current[productId];
+    delete baseQtdRef.current[productId];
+    setPendingQuantities((prev) => {
+      if (prev[productId] === undefined) return prev;
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
+  };
+
   const handleSaveChanges = (updatedProduct) => {
+    clearPendingProductState(updatedProduct.id);
     updateProductMutation.mutate(updatedProduct);
   };
 
   const handleQuantityChange = (product, amount) => {
-    const newQuantity = product.qtd + amount;
+    const currentProduct = pendingProductUpdatesRef.current[product.id] || product;
+    const newQuantity = currentProduct.qtd + amount;
     if (newQuantity < 0) return;
 
-    updateProductMutation.mutate({
-      ...product,
+    if (baseQtdRef.current[product.id] === undefined) {
+      baseQtdRef.current[product.id] = currentProduct.qtd;
+    }
+
+    const nextProductPayload = {
+      ...currentProduct,
       qtd: newQuantity,
       _silentToast: true,
+      _baseQtd: baseQtdRef.current[product.id],
+    };
+
+    pendingProductUpdatesRef.current[product.id] = nextProductPayload;
+    setPendingQuantities((prev) => ({ ...prev, [product.id]: newQuantity }));
+
+    queryClient.setQueriesData({ queryKey: ['products'] }, (old) => {
+      if (!Array.isArray(old)) return old;
+      return old.map((item) =>
+        item.id === product.id ? { ...item, qtd: newQuantity } : item
+      );
     });
+
+    if (debounceTimersRef.current[product.id]) {
+      clearTimeout(debounceTimersRef.current[product.id]);
+    }
+
+    debounceTimersRef.current[product.id] = setTimeout(() => {
+      delete debounceTimersRef.current[product.id];
+      const finalPayload = pendingProductUpdatesRef.current[product.id];
+      delete pendingProductUpdatesRef.current[product.id];
+      delete baseQtdRef.current[product.id];
+
+      if (finalPayload) {
+        updateProductMutation.mutate(finalPayload, {
+          onSettled: () => {
+            if (!pendingProductUpdatesRef.current[product.id]) {
+              setPendingQuantities((prev) => {
+                if (prev[product.id] === undefined) return prev;
+                const next = { ...prev };
+                delete next[product.id];
+                return next;
+              });
+            }
+          },
+        });
+      }
+    }, 450);
   };
+
+  const displayedProducts = products.map((product) =>
+    pendingQuantities[product.id] !== undefined
+      ? { ...product, qtd: pendingQuantities[product.id] }
+      : product
+  );
 
   const handleDeleteRequest = (product) => {
     setConfirmationProps({
@@ -320,7 +432,7 @@ function Stock() {
             </div>
 
             {/* HextaUI Tabs View Switcher */}
-            <Tabs value={viewMode} onValueChange={setViewMode} className="w-auto">
+            <Tabs value={viewMode} onValueChange={handleViewModeChange} className="w-auto">
               <TabsList className="h-9 rounded-lg border border-[var(--ledger-border)] bg-[var(--ledger-bg)] p-0.5">
                 <TabsTrigger
                   value="grid"
@@ -352,7 +464,7 @@ function Stock() {
         <div className="rounded-2xl border border-red-200 bg-[var(--ledger-danger-soft)] p-5 text-sm font-medium text-[var(--ledger-danger)]">
           Erro ao carregar produtos. Verifique a conexão com o servidor.
         </div>
-      ) : products.length === 0 ? (
+      ) : displayedProducts.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-6 py-16 text-center">
           <Boxes className="size-8 text-[var(--ledger-ink-subtle)]" />
           <div>
@@ -377,7 +489,7 @@ function Stock() {
       ) : viewMode === 'grid' ? (
         /* Grid View: Technical Spec Cards */
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {products.map((product) => {
+          {displayedProducts.map((product) => {
             const statusMeta = getProductStatusMeta(product);
             const margin = getMarginPercent(product.costPrice, product.salePrice);
             const categoryLabel =
@@ -511,7 +623,7 @@ function Stock() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--ledger-border)]">
-                {products.map((product) => {
+                {displayedProducts.map((product) => {
                   const statusMeta = getProductStatusMeta(product);
                   const categoryLabel =
                     product.categoryName || product.category?.name || 'Sem Categoria';

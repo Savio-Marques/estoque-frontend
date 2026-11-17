@@ -101,15 +101,31 @@ export function useProductMutations({ onAddSuccess, onUpdateSuccess, onDeleteSuc
   });
 
   const updateProductMutation = useMutation({
-    mutationFn: (updatedProduct) => api.put(`/product/${updatedProduct.id}`, updatedProduct),
+    mutationKey: ['updateProduct'],
+    mutationFn: ({ _silentToast, _baseQtd, ...updatedProduct }) =>
+      api.put(`/product/${updatedProduct.id}`, updatedProduct),
     onMutate: async (updatedProduct) => {
       await queryClient.cancelQueries({ queryKey: ['products'] });
-      const previousQueries = queryClient.getQueriesData({ queryKey: ['products'] });
+      const rawPreviousQueries = queryClient.getQueriesData({ queryKey: ['products'] });
+      const previousQueries =
+        updatedProduct._baseQtd !== undefined
+          ? rawPreviousQueries.map(([key, data]) => [
+              key,
+              Array.isArray(data)
+                ? data.map((item) =>
+                    item.id === updatedProduct.id
+                      ? { ...item, qtd: updatedProduct._baseQtd }
+                      : item
+                  )
+                : data,
+            ])
+          : rawPreviousQueries;
 
+      const { _silentToast, _baseQtd, ...cleanUpdate } = updatedProduct;
       queryClient.setQueriesData({ queryKey: ['products'] }, (old) => {
         if (!Array.isArray(old)) return old;
         return old.map((item) =>
-          item.id === updatedProduct.id ? { ...item, ...updatedProduct } : item
+          item.id === updatedProduct.id ? { ...item, ...cleanUpdate } : item
         );
       });
 
@@ -130,9 +146,11 @@ export function useProductMutations({ onAddSuccess, onUpdateSuccess, onDeleteSuc
       if (onUpdateSuccess) onUpdateSuccess();
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['summary'] });
-      queryClient.invalidateQueries({ queryKey: ['movements'] });
+      if (queryClient.isMutating({ mutationKey: ['updateProduct'] }) <= 1) {
+        queryClient.invalidateQueries({ queryKey: ['products'] });
+        queryClient.invalidateQueries({ queryKey: ['summary'] });
+        queryClient.invalidateQueries({ queryKey: ['movements'] });
+      }
     },
   });
 

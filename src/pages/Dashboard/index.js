@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -16,7 +16,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useProductSummary, useProductMutations } from '../../hooks/useProducts';
 import { useCategories, useCategoryMutations } from '../../hooks/useCategories';
-import { useDebtorMutations } from '../../hooks/useDebtors';
+import { useDebtors, useDebtorMutations } from '../../hooks/useDebtors';
 import {
   Sheet,
   SheetContent,
@@ -30,6 +30,12 @@ import AddProductForm from '../../components/AddProductForm';
 import ProfileModal from '../../components/ProfileModal';
 import StockMovementsModal from '../../components/StockMovementsModal';
 import './style.css';
+
+const formatCurrency = (value) =>
+  Number(value || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
 
 function getInitials(name, username) {
   const source = (name || username || 'U').trim();
@@ -69,6 +75,24 @@ function Dashboard() {
 
   const { data: summary } = useProductSummary();
   const { data: categories = [] } = useCategories({ enabled: activeModal === 'addProduct' });
+  const { data: debtorsData } = useDebtors({ enabled: activeModal === 'addPayment' });
+  const existingDebtors = useMemo(
+    () => debtorsData?.debtorDTOList || [],
+    [debtorsData]
+  );
+
+  const matchedDebtor = useMemo(() => {
+    const normalized = debtorName.trim().toLowerCase();
+    if (!normalized) return null;
+    return existingDebtors.find((d) => d.name?.trim().toLowerCase() === normalized) || null;
+  }, [existingDebtors, debtorName]);
+
+  const uniqueDebtorNames = useMemo(
+    () => Array.from(new Set(existingDebtors.map((d) => d.name?.trim()).filter(Boolean))),
+    [existingDebtors]
+  );
+
+  const parsedDebtorValue = parseFloat(debtorValue);
 
   const { addCategoryMutation } = useCategoryMutations({
     onAddSuccess: () => handleCloseModal(),
@@ -78,8 +102,9 @@ function Dashboard() {
     onAddSuccess: () => handleCloseModal(),
   });
 
-  const { addDebtorMutation } = useDebtorMutations({
+  const { addDebtorMutation, updateDebtorMutation } = useDebtorMutations({
     onAddSuccess: () => handleCloseModal(),
+    onUpdateSuccess: () => handleCloseModal(),
   });
 
   const handleLogout = () => {
@@ -99,10 +124,33 @@ function Dashboard() {
 
   const handleSaveDebtor = (e) => {
     e.preventDefault();
+    const trimmedName = debtorName.trim();
+    const newDesc = debtorDescription.trim();
+    const addedValue = parseFloat(debtorValue);
+
+    if (!trimmedName || Number.isNaN(addedValue)) return;
+
+    if (matchedDebtor) {
+      const nextValue = Number((Number(matchedDebtor.value || 0) + addedValue).toFixed(2));
+      const combinedDesc = [matchedDebtor.description?.trim(), newDesc]
+        .filter(Boolean)
+        .join(' • ')
+        .slice(0, 255);
+
+      updateDebtorMutation.mutate({
+        id: matchedDebtor.id,
+        name: matchedDebtor.name,
+        description: combinedDesc,
+        value: nextValue,
+        _customToast: 'Valor somado ao saldo do cliente na caderneta!',
+      });
+      return;
+    }
+
     addDebtorMutation.mutate({
-      name: debtorName.trim(),
-      description: debtorDescription.trim(),
-      value: parseFloat(debtorValue),
+      name: trimmedName,
+      description: newDesc,
+      value: addedValue,
     });
   };
 
@@ -182,7 +230,7 @@ function Dashboard() {
                 className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[0.84rem] font-medium text-stone-300 transition-colors hover:bg-white/[0.06] hover:text-white"
               >
                 <Plus className="size-4 text-amber-400" />
-                <span>Novo Cliente</span>
+                <span>Novo Lançamento</span>
               </button>
               <button
                 type="button"
@@ -383,7 +431,7 @@ function Dashboard() {
               </span>
               <div>
                 <p className="text-sm font-bold text-[var(--ledger-ink)]">
-                  Novo Cliente na Caderneta
+                  Novo Lançamento na Caderneta
                 </p>
                 <p className="text-xs text-[var(--ledger-ink-subtle)]">
                   Registrar venda fiada ou valor pendente
@@ -456,13 +504,14 @@ function Dashboard() {
       <Modal
         isOpen={activeModal === 'addPayment'}
         onClose={handleCloseModal}
-        title="Adicionar Novo Cliente"
+        title="Novo Lançamento na Caderneta"
       >
         <form className="ledger-form" onSubmit={handleSaveDebtor}>
           <div className="ledger-field">
             <label htmlFor="debtorName">Nome do Cliente</label>
             <input
               id="debtorName"
+              list="existing-debtors-datalist"
               className="ledger-input"
               type="text"
               value={debtorName}
@@ -471,6 +520,33 @@ function Dashboard() {
               required
               autoFocus
             />
+            <datalist id="existing-debtors-datalist">
+              {uniqueDebtorNames.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+
+            {matchedDebtor && (
+              <div className="mt-1.5 rounded-xl border border-amber-300/80 bg-[var(--ledger-amber-soft)] px-3 py-2.5 text-xs text-amber-950">
+                <p className="font-semibold">
+                  Cliente já possui saldo em aberto de{' '}
+                  <span className="font-mono-tabular font-bold">
+                    {formatCurrency(matchedDebtor.value)}
+                  </span>
+                  .
+                </p>
+                <p className="mt-0.5 text-amber-900">
+                  Este lançamento será somado automaticamente à ficha existente de{' '}
+                  <strong>{matchedDebtor.name}</strong>.
+                </p>
+                {Number.isFinite(parsedDebtorValue) && parsedDebtorValue > 0 && (
+                  <p className="font-mono-tabular mt-1.5 border-t border-amber-300/60 pt-1.5 font-semibold text-amber-950">
+                    Saldo atual: {formatCurrency(matchedDebtor.value)} &rarr; Novo total:{' '}
+                    {formatCurrency(Number(matchedDebtor.value || 0) + parsedDebtorValue)}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="ledger-field">
@@ -486,7 +562,9 @@ function Dashboard() {
           </div>
 
           <div className="ledger-field">
-            <label htmlFor="debtorValue">Valor Devido</label>
+            <label htmlFor="debtorValue">
+              {matchedDebtor ? 'Valor a Somar ao Saldo' : 'Valor Devido'}
+            </label>
             <div className="ledger-input-affix">
               <span className="affix-prefix">R$</span>
               <input
@@ -511,9 +589,11 @@ function Dashboard() {
             <button
               type="submit"
               className="ledger-btn-primary"
-              disabled={addDebtorMutation.isPending}
+              disabled={addDebtorMutation.isPending || updateDebtorMutation.isPending}
             >
-              {addDebtorMutation.isPending ? 'Salvando...' : 'Salvar Lançamento'}
+              {addDebtorMutation.isPending || updateDebtorMutation.isPending
+                ? 'Salvando...'
+                : 'Salvar Lançamento'}
             </button>
           </div>
         </form>

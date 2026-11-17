@@ -25,23 +25,24 @@ export function useDebtorMutations({ onAddSuccess, onUpdateSuccess, onPaidSucces
     mutationFn: (data) => api.post('/debtor', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['debtors'] });
-      toast.success('Pagamento pendente adicionado com sucesso!');
+      toast.success('Lançamento registrado na caderneta!');
       if (onAddSuccess) onAddSuccess();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao adicionar pagamento.');
+      toast.error(error.response?.data?.message || 'Falha ao registrar lançamento.');
     },
   });
 
   const updateDebtorMutation = useMutation({
-    mutationFn: (updatedDebtor) => api.put(`/debtor/${updatedDebtor.id}`, updatedDebtor),
-    onSuccess: () => {
+    mutationFn: ({ id, name, description, value }) =>
+      api.put(`/debtor/${id}`, { id, name, description, value }),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['debtors'] });
-      toast.success('Devedor atualizado com sucesso!');
+      toast.success(variables?._customToast || 'Lançamento atualizado com sucesso!');
       if (onUpdateSuccess) onUpdateSuccess();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao atualizar devedor.');
+      toast.error(error.response?.data?.message || 'Falha ao atualizar lançamento.');
     },
   });
 

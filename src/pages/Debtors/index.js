@@ -121,7 +121,7 @@ function Debtors() {
             className="ledger-btn-primary self-start sm:self-auto"
           >
             <Plus className="size-4" />
-            <span>Novo Cliente</span>
+            <span>Novo Lançamento</span>
           </button>
         )}
       </div>
@@ -205,7 +205,7 @@ function Debtors() {
               className="ledger-btn-primary mt-1"
             >
               <Plus className="size-4" />
-              <span>Registrar Lançamento</span>
+              <span>Novo Lançamento</span>
             </button>
           )}
         </div>
