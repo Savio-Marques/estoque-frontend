@@ -2,8 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import {
   ArrowRight,
-  Boxes,
-  FolderCheck,
   Pencil,
   Plus,
   Search,
@@ -14,8 +12,6 @@ import {
 } from 'lucide-react';
 import { useCategories, useCategoryMutations } from '../../hooks/useCategories';
 import { useProducts } from '../../hooks/useProducts';
-import { InsightCard } from '@/components/motion/insight-card';
-import { NumberTicker } from '@/components/motion/number-ticker';
 import { Spinner } from '@/components/ui/spinner';
 import EditCategoryModal from '../../components/EditCategoryModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -93,9 +89,7 @@ function Categories() {
       isOpen: true,
       title: 'Excluir Categoria',
       message: `Tem certeza que deseja excluir a categoria "${category.name}"?`,
-      onConfirm: () => {
-        deleteCategoryMutation.mutate(category.id);
-      },
+      onConfirm: () => deleteCategoryMutation.mutateAsync(category.id),
     });
   };
 
@@ -107,9 +101,23 @@ function Categories() {
           <span className="font-mono-tabular text-[0.72rem] font-semibold uppercase tracking-widest text-[var(--ledger-accent)]">
             Taxonomia
           </span>
-          <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-[1.75rem]">
-            Gerenciar Categorias
-          </h2>
+          <div className="mt-1 flex flex-wrap items-center gap-2.5">
+            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-[1.75rem]">
+              Gerenciar Categorias
+            </h2>
+            {!isLoading && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-mono-tabular rounded-md border border-[var(--ledger-border)] bg-[var(--ledger-surface)] px-2 py-0.5 text-xs font-semibold text-[var(--ledger-ink-muted)]">
+                  {formatInteger(categories.length)}{' '}
+                  {categories.length === 1 ? 'categoria' : 'categorias'}
+                </span>
+                <span className="font-mono-tabular rounded-md border border-[var(--ledger-border)] bg-[var(--ledger-surface)] px-2 py-0.5 text-xs font-medium text-[var(--ledger-ink-subtle)]">
+                  {formatInteger(activeCategoriesCount)} em uso ·{' '}
+                  {formatInteger(totalProductsCount)} produtos
+                </span>
+              </div>
+            )}
+          </div>
           <p className="mt-1 text-sm text-[var(--ledger-ink-muted)]">
             Organize os produtos do estoque em grupos claros e acompanhe a distribuição por setor.
           </p>
@@ -125,28 +133,6 @@ function Categories() {
             <span>Nova Categoria</span>
           </button>
         )}
-      </div>
-
-      {/* Summary KPIs */}
-      <div className="easeui-theme grid grid-cols-1 gap-3.5 sm:grid-cols-3">
-        <InsightCard
-          label="Total de Categorias"
-          value={<NumberTicker value={categories.length} format={formatInteger} />}
-          icon={<Tags className="size-4 text-[var(--ledger-accent)]" />}
-          className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
-        />
-        <InsightCard
-          label="Categorias em Uso"
-          value={<NumberTicker value={activeCategoriesCount} format={formatInteger} />}
-          icon={<FolderCheck className="size-4 text-[var(--ledger-amber)]" />}
-          className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
-        />
-        <InsightCard
-          label="Produtos Catalogados"
-          value={<NumberTicker value={totalProductsCount} format={formatInteger} />}
-          icon={<Boxes className="size-4 text-[var(--ledger-accent)]" />}
-          className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
-        />
       </div>
 
       {/* Search Filter */}
@@ -308,6 +294,7 @@ function Categories() {
         category={editingCategory}
         onSave={handleSaveCategory}
         onClose={() => setEditingCategory(null)}
+        isPending={updateCategoryMutation.isPending}
       />
 
       <ConfirmationModal

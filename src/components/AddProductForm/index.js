@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-function AddProductForm({ categories = [], onSave }) {
+function AddProductForm({ categories = [], onSave, onCancel, isPending = false }) {
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [qtd, setQtd] = useState('');
@@ -142,8 +142,18 @@ function AddProductForm({ categories = [], onSave }) {
       </div>
 
       <div className="ledger-form-actions">
-        <button type="submit" className="ledger-btn-primary">
-          Salvar Produto
+        {onCancel && (
+          <button
+            type="button"
+            className="ledger-btn-secondary"
+            onClick={onCancel}
+            disabled={isPending}
+          >
+            Cancelar
+          </button>
+        )}
+        <button type="submit" className="ledger-btn-primary" disabled={isPending}>
+          {isPending ? 'Salvando...' : 'Salvar Produto'}
         </button>
       </div>
     </form>

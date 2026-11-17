@@ -48,6 +48,7 @@ function getProductStatusMeta(product) {
       status: 'error',
       label: 'Sem Estoque',
       badgeTone: 'bg-[var(--ledger-danger-soft)] text-[var(--ledger-danger)] border-red-200',
+      qtyTone: 'text-[var(--ledger-danger)] font-extrabold',
     };
   }
   if (minQty > 0 && product.qtd <= minQty) {
@@ -55,12 +56,14 @@ function getProductStatusMeta(product) {
       status: 'warning',
       label: 'Estoque Baixo',
       badgeTone: 'bg-[var(--ledger-amber-soft)] text-amber-800 border-amber-300/70',
+      qtyTone: 'text-amber-700 font-bold',
     };
   }
   return {
     status: 'online',
     label: 'Em Dia',
     badgeTone: 'bg-[var(--ledger-accent-soft)] text-[var(--ledger-accent)] border-[var(--ledger-accent)]/20',
+    qtyTone: 'text-[var(--ledger-ink)] font-bold',
   };
 }
 
@@ -93,6 +96,7 @@ function Stock() {
   });
   const [pendingQuantities, setPendingQuantities] = useState({});
 
+  const searchInputRef = useRef(null);
   const debounceTimersRef = useRef({});
   const pendingProductUpdatesRef = useRef({});
   const baseQtdRef = useRef({});
@@ -125,9 +129,30 @@ function Stock() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-    }, 500);
+    }, 250);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target;
+      const tagName = target?.tagName;
+      if (
+        tagName === 'INPUT' ||
+        tagName === 'TEXTAREA' ||
+        tagName === 'SELECT' ||
+        target?.isContentEditable ||
+        document.querySelector('[role="dialog"], [role="alertdialog"]')
+      ) {
+        return;
+      }
+      e.preventDefault();
+      searchInputRef.current?.focus();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleCategoryChange = (value) => {
     const nextCat = value === 'all' || !value ? '' : String(value);
@@ -262,9 +287,7 @@ function Stock() {
       isOpen: true,
       title: 'Confirmar Exclusão',
       message: `Tem certeza de que deseja excluir o produto "${product.name}"?`,
-      onConfirm: () => {
-        deleteProductMutation.mutate(product.id);
-      },
+      onConfirm: () => deleteProductMutation.mutateAsync(product.id),
     });
   };
 
@@ -316,34 +339,65 @@ function Stock() {
 
       {/* 4 Stock KPI Cards */}
       <div className="easeui-theme grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-        <InsightCard
-          label="Total de Produtos"
-          value={<NumberTicker value={Number(summary?.totalProduct || 0)} format={formatInteger} />}
-          icon={<Boxes className="size-4 text-[var(--ledger-accent)]" />}
-          className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
-        />
+        <button
+          type="button"
+          onClick={() => setStockFilter('all')}
+          aria-pressed={stockFilter === 'all'}
+          className="w-full rounded-xl text-left transition-transform active:scale-[0.99]"
+        >
+          <InsightCard
+            label="Total de Produtos"
+            value={<NumberTicker value={Number(summary?.totalProduct || 0)} format={formatInteger} />}
+            icon={<Boxes className="size-4 text-[var(--ledger-accent)]" />}
+            className={`cursor-pointer rounded-xl border bg-[var(--ledger-surface)] shadow-none transition-colors hover:border-[var(--ledger-border-strong)] ${
+              stockFilter === 'all'
+                ? 'border-[var(--ledger-accent)] ring-2 ring-[var(--ledger-accent)]/20'
+                : 'border-[var(--ledger-border)]'
+            }`}
+          />
+        </button>
 
-        <InsightCard
-          label="Estoque Baixo"
-          value={<NumberTicker value={Number(summary?.lowStock || 0)} format={formatInteger} />}
-          icon={<AlertTriangle className="size-4 text-[var(--ledger-amber)]" />}
-          className={`rounded-xl border bg-[var(--ledger-surface)] shadow-none ${
-            Number(summary?.lowStock || 0) > 0
-              ? 'border-amber-300/80'
-              : 'border-[var(--ledger-border)]'
-          }`}
-        />
+        <button
+          type="button"
+          onClick={() => setStockFilter((prev) => (prev === 'low' ? 'all' : 'low'))}
+          aria-pressed={stockFilter === 'low'}
+          className="w-full rounded-xl text-left transition-transform active:scale-[0.99]"
+        >
+          <InsightCard
+            label="Estoque Baixo"
+            value={<NumberTicker value={Number(summary?.lowStock || 0)} format={formatInteger} />}
+            icon={<AlertTriangle className="size-4 text-[var(--ledger-amber)]" />}
+            className={`cursor-pointer rounded-xl border bg-[var(--ledger-surface)] shadow-none transition-colors hover:border-amber-400 ${
+              stockFilter === 'low'
+                ? 'border-amber-500 ring-2 ring-amber-500/25'
+                : Number(summary?.lowStock || 0) > 0
+                  ? 'border-amber-300/80'
+                  : 'border-[var(--ledger-border)]'
+            }`}
+          />
+        </button>
 
-        <InsightCard
-          label="Sem Estoque"
-          value={<NumberTicker value={Number(summary?.noStock || 0)} format={formatInteger} />}
-          icon={<PackageX className="size-4 text-[var(--ledger-danger)]" />}
-          className={`rounded-xl border bg-[var(--ledger-surface)] shadow-none ${
-            Number(summary?.noStock || 0) > 0
-              ? 'border-red-300/80'
-              : 'border-[var(--ledger-border)]'
-          }`}
-        />
+        <button
+          type="button"
+          onClick={() =>
+            setStockFilter((prev) => (prev === 'out_of_stock' ? 'all' : 'out_of_stock'))
+          }
+          aria-pressed={stockFilter === 'out_of_stock'}
+          className="w-full rounded-xl text-left transition-transform active:scale-[0.99]"
+        >
+          <InsightCard
+            label="Sem Estoque"
+            value={<NumberTicker value={Number(summary?.noStock || 0)} format={formatInteger} />}
+            icon={<PackageX className="size-4 text-[var(--ledger-danger)]" />}
+            className={`cursor-pointer rounded-xl border bg-[var(--ledger-surface)] shadow-none transition-colors hover:border-red-400 ${
+              stockFilter === 'out_of_stock'
+                ? 'border-red-500 ring-2 ring-red-500/25'
+                : Number(summary?.noStock || 0) > 0
+                  ? 'border-red-300/80'
+                  : 'border-[var(--ledger-border)]'
+            }`}
+          />
+        </button>
 
         <InsightCard
           label="Custo em Estoque"
@@ -371,13 +425,14 @@ function Stock() {
             <div className="ledger-search-wrapper min-w-0 flex-1 sm:max-w-md">
               <Search className="ledger-search-icon" />
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Buscar produto por nome..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="ledger-search-input"
               />
-              {searchTerm && (
+              {searchTerm ? (
                 <button
                   type="button"
                   onClick={() => setSearchTerm('')}
@@ -386,6 +441,13 @@ function Stock() {
                 >
                   <X className="size-4" />
                 </button>
+              ) : (
+                <kbd
+                  aria-hidden="true"
+                  className="font-mono-tabular pointer-events-none absolute right-2.5 hidden rounded border border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-1.5 py-0.5 text-[0.68rem] font-semibold text-[var(--ledger-ink-subtle)] sm:inline-block"
+                >
+                  /
+                </kbd>
               )}
             </div>
 
@@ -568,7 +630,7 @@ function Stock() {
                     </button>
 
                     <div className="min-w-[4.5rem] rounded-lg border border-[var(--ledger-border)] bg-[var(--ledger-surface)] px-2.5 py-1.5 sm:py-1 text-center">
-                      <span className="font-mono-tabular text-sm font-bold text-[var(--ledger-ink)]">
+                      <span className={`font-mono-tabular text-sm ${statusMeta.qtyTone}`}>
                         {product.qtd}
                       </span>
                       <span className="ml-1 text-[0.7rem] font-medium text-[var(--ledger-ink-subtle)]">
@@ -617,7 +679,7 @@ function Stock() {
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 text-right">Custo</th>
                   <th className="px-4 py-3 text-right">Venda</th>
-                  <th className="px-4 py-3 text-center">Mínimo</th>
+                  <th className="px-4 py-3 text-right">Mínimo</th>
                   <th className="px-4 py-3 text-center">Quantidade</th>
                   <th className="px-4 py-3 text-right">Ações</th>
                 </tr>
@@ -625,6 +687,7 @@ function Stock() {
               <tbody className="divide-y divide-[var(--ledger-border)]">
                 {displayedProducts.map((product) => {
                   const statusMeta = getProductStatusMeta(product);
+                  const margin = getMarginPercent(product.costPrice, product.salePrice);
                   const categoryLabel =
                     product.categoryName || product.category?.name || 'Sem Categoria';
 
@@ -654,10 +717,18 @@ function Stock() {
                       <td className="font-mono-tabular px-4 py-3 text-right text-xs font-medium text-[var(--ledger-ink-muted)]">
                         {formatCurrency(product.costPrice)}
                       </td>
-                      <td className="font-mono-tabular px-4 py-3 text-right text-xs font-bold text-[var(--ledger-ink)]">
-                        {formatCurrency(product.salePrice)}
+                      <td className="font-mono-tabular px-4 py-3 text-right">
+                        <div className="text-xs font-bold text-[var(--ledger-ink)]">
+                          {formatCurrency(product.salePrice)}
+                        </div>
+                        {margin !== null && (
+                          <div className="mt-0.5 text-[0.68rem] font-semibold text-[var(--ledger-accent)]">
+                            {margin >= 0 ? '+' : ''}
+                            {margin.toFixed(0)}%
+                          </div>
+                        )}
                       </td>
-                      <td className="font-mono-tabular px-4 py-3 text-center text-xs text-[var(--ledger-ink-subtle)]">
+                      <td className="font-mono-tabular px-4 py-3 text-right text-xs text-[var(--ledger-ink-subtle)]">
                         {product.minQuantity ?? 5}
                       </td>
                       <td className="px-4 py-3">
@@ -671,7 +742,7 @@ function Stock() {
                           >
                             <Minus className="size-3" />
                           </button>
-                          <span className="font-mono-tabular min-w-[2.5rem] text-center text-xs font-bold text-[var(--ledger-ink)]">
+                          <span className={`font-mono-tabular min-w-[2.5rem] text-center text-xs ${statusMeta.qtyTone}`}>
                             {product.qtd}
                           </span>
                           <button
@@ -709,6 +780,7 @@ function Stock() {
         onSave={handleSaveChanges}
         onClose={() => setEditingProduct(null)}
         onDeleteRequest={handleDeleteRequest}
+        isPending={updateProductMutation.isPending}
       />
 
       <ConfirmationModal

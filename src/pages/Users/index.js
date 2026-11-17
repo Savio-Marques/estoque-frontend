@@ -1,9 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Pencil, Search, Shield, Trash2, UserPlus, Users as UsersIcon, X } from 'lucide-react';
+import { Pencil, Search, Trash2, UserPlus, Users as UsersIcon, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUsers, useUserMutations } from '../../hooks/useUsers';
-import { InsightCard } from '@/components/motion/insight-card';
-import { NumberTicker } from '@/components/motion/number-ticker';
 import {
   Select,
   SelectContent,
@@ -108,9 +106,7 @@ function Users() {
       title: 'Excluir Usuário',
       message: `Tem certeza que deseja excluir o usuário "${u.name}" (@${u.username})?`,
       confirmButtonClass: 'confirm-button-delete',
-      onConfirm: () => {
-        deleteUserMutation.mutate(u.id);
-      },
+      onConfirm: () => deleteUserMutation.mutateAsync(u.id),
     });
   };
 
@@ -124,9 +120,23 @@ function Users() {
           <span className="font-mono-tabular text-[0.72rem] font-semibold uppercase tracking-widest text-[var(--ledger-accent)]">
             Administração
           </span>
-          <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-[1.75rem]">
-            Gerenciar Usuários
-          </h2>
+          <div className="mt-1 flex flex-wrap items-center gap-2.5">
+            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-[1.75rem]">
+              Gerenciar Usuários
+            </h2>
+            {!isLoading && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-mono-tabular rounded-md border border-[var(--ledger-border)] bg-[var(--ledger-surface)] px-2 py-0.5 text-xs font-semibold text-[var(--ledger-ink-muted)]">
+                  {formatInteger(users.length)}{' '}
+                  {users.length === 1 ? 'usuário' : 'usuários'}
+                </span>
+                <span className="font-mono-tabular rounded-md border border-amber-300/70 bg-[var(--ledger-amber-soft)] px-2 py-0.5 text-xs font-semibold text-amber-900">
+                  {formatInteger(adminCount)}{' '}
+                  {adminCount === 1 ? 'admin' : 'admins'}
+                </span>
+              </div>
+            )}
+          </div>
           <p className="mt-1 text-sm text-[var(--ledger-ink-muted)]">
             Controle credenciais de acesso e permissões operacionais da equipe.
           </p>
@@ -140,23 +150,6 @@ function Users() {
           <UserPlus className="size-4" />
           <span>Novo Usuário</span>
         </button>
-      </div>
-
-      {/* 2 User KPI Cards */}
-      <div className="easeui-theme grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-        <InsightCard
-          label="Total de Usuários"
-          value={<NumberTicker value={users.length} format={formatInteger} />}
-          icon={<UsersIcon className="size-4 text-[var(--ledger-accent)]" />}
-          className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
-        />
-
-        <InsightCard
-          label="Administradores"
-          value={<NumberTicker value={adminCount} format={formatInteger} />}
-          icon={<Shield className="size-4 text-[var(--ledger-amber)]" />}
-          className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
-        />
       </div>
 
       {/* Search Bar */}

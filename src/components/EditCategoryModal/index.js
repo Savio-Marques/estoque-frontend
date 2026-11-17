@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../Modal';
 
-function EditCategoryModal({ category, onSave, onClose }) {
+function EditCategoryModal({ category, onSave, onClose, isPending = false }) {
   const [name, setName] = useState('');
 
   useEffect(() => {
@@ -34,11 +34,16 @@ function EditCategoryModal({ category, onSave, onClose }) {
           />
         </div>
         <div className="ledger-form-actions">
-          <button type="button" className="ledger-btn-secondary" onClick={onClose}>
+          <button
+            type="button"
+            className="ledger-btn-secondary"
+            onClick={onClose}
+            disabled={isPending}
+          >
             Cancelar
           </button>
-          <button type="submit" className="ledger-btn-primary">
-            Salvar Alterações
+          <button type="submit" className="ledger-btn-primary" disabled={isPending}>
+            {isPending ? 'Salvando...' : 'Salvar Alterações'}
           </button>
         </div>
       </form>

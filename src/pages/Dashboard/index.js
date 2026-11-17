@@ -498,7 +498,12 @@ function Dashboard() {
         onClose={handleCloseModal}
         title="Adicionar Novo Produto"
       >
-        <AddProductForm categories={categories} onSave={handleSaveProduct} />
+        <AddProductForm
+          categories={categories}
+          onSave={handleSaveProduct}
+          onCancel={handleCloseModal}
+          isPending={addProductMutation.isPending}
+        />
       </Modal>
 
       <Modal

@@ -10,7 +10,7 @@ import {
 import Modal from '../Modal';
 import './style.css';
 
-function EditProductModal({ product, categories = [], onSave, onClose, onDeleteRequest }) {
+function EditProductModal({ product, categories = [], onSave, onClose, onDeleteRequest, isPending = false }) {
   const [formData, setFormData] = useState({
     name: '',
     qtd: 0,
@@ -176,6 +176,7 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
             type="button"
             className="ledger-btn-danger"
             onClick={() => onDeleteRequest(product)}
+            disabled={isPending}
           >
             <Trash2 className="size-4" />
             Excluir Produto
@@ -183,11 +184,16 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
         </div>
 
         <div className="ledger-form-actions">
-          <button type="button" className="ledger-btn-secondary" onClick={onClose}>
+          <button
+            type="button"
+            className="ledger-btn-secondary"
+            onClick={onClose}
+            disabled={isPending}
+          >
             Cancelar
           </button>
-          <button type="submit" className="ledger-btn-primary">
-            Salvar Alterações
+          <button type="submit" className="ledger-btn-primary" disabled={isPending}>
+            {isPending ? 'Salvando...' : 'Salvar Alterações'}
           </button>
         </div>
       </form>

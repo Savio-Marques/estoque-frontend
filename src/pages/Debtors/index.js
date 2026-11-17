@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
+  AlertTriangle,
   BookOpen,
   CalendarClock,
   CheckCheck,
@@ -16,6 +17,13 @@ import {
 import { useDebtors, useDebtorMutations } from '../../hooks/useDebtors';
 import { InsightCard } from '@/components/motion/insight-card';
 import { NumberTicker } from '@/components/motion/number-ticker';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import EditDebtorModal from '../../components/EditDebtorModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
@@ -37,30 +45,102 @@ const formatEntryDate = (dateString) => {
   return parsed.toLocaleDateString('pt-BR');
 };
 
+const getDaysOpen = (dateString) => {
+  if (!dateString) return 0;
+  const parsed = new Date(dateString);
+  if (Number.isNaN(parsed.getTime())) return 0;
+  const diffMs = Date.now() - parsed.getTime();
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+};
+
+const SORT_LABELS = {
+  recent: 'Mais recentes',
+  oldest: 'Mais antigos',
+  highest: 'Maior valor',
+  name: 'Nome (A–Z)',
+};
+
 function Debtors() {
   const outletContext = useOutletContext() || {};
   const { openModal } = outletContext;
+  const searchInputRef = useRef(null);
 
   const [editingDebtor, setEditingDebtor] = useState(null);
   const [payingDebtor, setPayingDebtor] = useState(null);
   const [partialAmount, setPartialAmount] = useState('');
   const [debtorSearchTerm, setDebtorSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [sortBy, setSortBy] = useState('recent');
+  const [onlyOverdue, setOnlyOverdue] = useState(false);
   const [confirmationProps, setConfirmationProps] = useState({ isOpen: false });
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(debtorSearchTerm);
-    }, 500);
+    }, 250);
     return () => clearTimeout(timer);
   }, [debtorSearchTerm]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target;
+      const tagName = target?.tagName;
+      if (
+        tagName === 'INPUT' ||
+        tagName === 'TEXTAREA' ||
+        tagName === 'SELECT' ||
+        target?.isContentEditable ||
+        document.querySelector('[role="dialog"], [role="alertdialog"]')
+      ) {
+        return;
+      }
+      e.preventDefault();
+      searchInputRef.current?.focus();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const { data: debtorsData, isLoading, isError } = useDebtors({
     searchTerm: debouncedSearch,
   });
 
-  const debtors = debtorsData?.debtorDTOList || [];
+  const debtors = useMemo(() => debtorsData?.debtorDTOList || [], [debtorsData]);
   const summaryDebtorsDTO = debtorsData?.summaryDebtorsDTO || { totalValue: 0, totalDebtors: 0 };
+
+  const overdueStats = useMemo(() => {
+    return debtors.reduce(
+      (acc, debtor) => {
+        if (getDaysOpen(debtor.date) >= 30) {
+          acc.count += 1;
+          acc.total += Number(debtor.value || 0);
+        }
+        return acc;
+      },
+      { count: 0, total: 0 }
+    );
+  }, [debtors]);
+
+  const visibleDebtors = useMemo(() => {
+    const filtered = onlyOverdue
+      ? debtors.filter((d) => getDaysOpen(d.date) >= 30)
+      : [...debtors];
+
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'oldest':
+          return new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime();
+        case 'highest':
+          return Number(b.value || 0) - Number(a.value || 0);
+        case 'name':
+          return (a.name || '').localeCompare(b.name || '', 'pt-BR');
+        case 'recent':
+        default:
+          return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+      }
+    });
+  }, [debtors, onlyOverdue, sortBy]);
 
   const { updateDebtorMutation, partialPayMutation, markAsPaidMutation } = useDebtorMutations({
     onUpdateSuccess: () => setEditingDebtor(null),
@@ -84,9 +164,7 @@ function Debtors() {
       title: 'Confirmar Quitação',
       message: `Confirmar pagamento integral de "${debtor.name}" no valor de ${formatCurrency(debtor.value)}?`,
       confirmButtonClass: 'confirm-button-paid',
-      onConfirm: () => {
-        markAsPaidMutation.mutate(debtor.id);
-      },
+      onConfirm: () => markAsPaidMutation.mutateAsync(debtor.id),
     });
   };
 
@@ -97,6 +175,14 @@ function Debtors() {
 
     partialPayMutation.mutate({ id: payingDebtor.id, amount });
   };
+
+  const payingBalance = Number(payingDebtor?.value || 0);
+  const parsedPartial = parseFloat(partialAmount);
+  const hasValidPartial =
+    Number.isFinite(parsedPartial) && parsedPartial > 0 && parsedPartial <= payingBalance;
+  const remainingBalance = hasValidPartial
+    ? Number((payingBalance - parsedPartial).toFixed(2))
+    : null;
 
   return (
     <div className="space-y-6">
@@ -126,8 +212,8 @@ function Debtors() {
         )}
       </div>
 
-      {/* 2 Debtor KPI Cards */}
-      <div className="easeui-theme grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+      {/* 3 Debtor KPI Cards */}
+      <div className="easeui-theme grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         <InsightCard
           label="Total a Receber"
           value={
@@ -140,40 +226,114 @@ function Debtors() {
           className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
         />
 
-        <InsightCard
-          label="Clientes em Aberto"
-          value={
-            <NumberTicker
-              value={Number(summaryDebtorsDTO?.totalDebtors || 0)}
-              format={formatInteger}
-            />
-          }
-          icon={<Users className="size-4 text-[var(--ledger-amber)]" />}
-          className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
-        />
+        <button
+          type="button"
+          onClick={() => setOnlyOverdue(false)}
+          aria-pressed={!onlyOverdue}
+          className="w-full rounded-xl text-left transition-transform active:scale-[0.99]"
+        >
+          <InsightCard
+            label="Clientes em Aberto"
+            value={
+              <NumberTicker
+                value={Number(summaryDebtorsDTO?.totalDebtors || 0)}
+                format={formatInteger}
+              />
+            }
+            icon={<Users className="size-4 text-[var(--ledger-amber)]" />}
+            className={`cursor-pointer rounded-xl border bg-[var(--ledger-surface)] shadow-none transition-colors hover:border-[var(--ledger-border-strong)] ${
+              !onlyOverdue
+                ? 'border-[var(--ledger-accent)] ring-2 ring-[var(--ledger-accent)]/20'
+                : 'border-[var(--ledger-border)]'
+            }`}
+          />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setOnlyOverdue((prev) => !prev)}
+          aria-pressed={onlyOverdue}
+          className="w-full rounded-xl text-left transition-transform active:scale-[0.99]"
+        >
+          <InsightCard
+            label="Acima de 30 Dias"
+            value={
+              <div className="flex flex-col">
+                <NumberTicker value={overdueStats.count} format={formatInteger} />
+                <span className="font-mono-tabular mt-1 text-[0.72rem] font-medium text-[var(--ledger-ink-subtle)]">
+                  {formatCurrency(overdueStats.total)} em atraso
+                </span>
+              </div>
+            }
+            icon={
+              <AlertTriangle
+                className={`size-4 ${
+                  overdueStats.count > 0 ? 'text-[var(--ledger-danger)]' : 'text-[var(--ledger-amber)]'
+                }`}
+              />
+            }
+            className={`cursor-pointer rounded-xl border bg-[var(--ledger-surface)] shadow-none transition-colors hover:border-red-400 ${
+              onlyOverdue
+                ? 'border-red-500 ring-2 ring-red-500/25'
+                : overdueStats.count > 0
+                  ? 'border-red-300/80'
+                  : 'border-[var(--ledger-border)]'
+            }`}
+          />
+        </button>
       </div>
 
-      {/* Search Bar (Fixed icon spacing + Clear button) */}
+      {/* Search Bar & Sorting */}
       <div className="rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-3.5 sm:p-4">
-        <div className="ledger-search-wrapper max-w-md">
-          <Search className="ledger-search-icon" />
-          <input
-            type="text"
-            placeholder="Buscar cliente por nome..."
-            value={debtorSearchTerm}
-            onChange={(e) => setDebtorSearchTerm(e.target.value)}
-            className="ledger-search-input"
-          />
-          {debtorSearchTerm && (
-            <button
-              type="button"
-              onClick={() => setDebtorSearchTerm('')}
-              aria-label="Limpar busca de cliente"
-              className="ledger-search-clear"
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="ledger-search-wrapper min-w-0 flex-1 sm:max-w-md">
+            <Search className="ledger-search-icon" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Buscar cliente por nome..."
+              value={debtorSearchTerm}
+              onChange={(e) => setDebtorSearchTerm(e.target.value)}
+              className="ledger-search-input"
+            />
+            {debtorSearchTerm ? (
+              <button
+                type="button"
+                onClick={() => setDebtorSearchTerm('')}
+                aria-label="Limpar busca de cliente"
+                className="ledger-search-clear"
+              >
+                <X className="size-4" />
+              </button>
+            ) : (
+              <kbd
+                aria-hidden="true"
+                className="font-mono-tabular pointer-events-none absolute right-2.5 hidden rounded border border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-1.5 py-0.5 text-[0.68rem] font-semibold text-[var(--ledger-ink-subtle)] sm:inline-block"
+              >
+                /
+              </kbd>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs font-semibold text-[var(--ledger-ink-subtle)] sm:inline">
+              Ordenar:
+            </span>
+            <Select
+              value={sortBy}
+              onValueChange={(val) => setSortBy(val ? String(val) : 'recent')}
             >
-              <X className="size-4" />
-            </button>
-          )}
+              <SelectTrigger aria-label="Ordenar lançamentos" className="w-full sm:w-48">
+                <SelectValue>{(val) => SORT_LABELS[val] || SORT_LABELS.recent}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">{SORT_LABELS.recent}</SelectItem>
+                <SelectItem value="oldest">{SORT_LABELS.oldest}</SelectItem>
+                <SelectItem value="highest">{SORT_LABELS.highest}</SelectItem>
+                <SelectItem value="name">{SORT_LABELS.name}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -187,26 +347,40 @@ function Debtors() {
         <div className="rounded-2xl border border-red-200 bg-[var(--ledger-danger-soft)] p-5 text-sm font-medium text-[var(--ledger-danger)]">
           Erro ao carregar a lista de clientes.
         </div>
-      ) : debtors.length === 0 ? (
+      ) : visibleDebtors.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-6 py-16 text-center">
           <BookOpen className="size-8 text-[var(--ledger-ink-subtle)]" />
           <div>
             <p className="text-base font-bold text-[var(--ledger-ink)]">
-              Nenhum lançamento encontrado
+              {onlyOverdue && debtors.length > 0
+                ? 'Nenhum cliente com atraso acima de 30 dias'
+                : 'Nenhum lançamento encontrado'}
             </p>
             <p className="mt-1 text-sm text-[var(--ledger-ink-subtle)]">
-              Não há clientes em aberto correspondentes à busca atual.
+              {onlyOverdue && debtors.length > 0
+                ? 'Todos os saldos em aberto estão dentro do prazo de 30 dias.'
+                : 'Não há clientes em aberto correspondentes à busca atual.'}
             </p>
           </div>
-          {openModal && (
+          {onlyOverdue && debtors.length > 0 ? (
             <button
               type="button"
-              onClick={() => openModal('addPayment')}
-              className="ledger-btn-primary mt-1"
+              onClick={() => setOnlyOverdue(false)}
+              className="ledger-btn-secondary mt-1"
             >
-              <Plus className="size-4" />
-              <span>Novo Lançamento</span>
+              Mostrar todos os clientes
             </button>
+          ) : (
+            openModal && (
+              <button
+                type="button"
+                onClick={() => openModal('addPayment')}
+                className="ledger-btn-primary mt-1"
+              >
+                <Plus className="size-4" />
+                <span>Novo Lançamento</span>
+              </button>
+            )
           )}
         </div>
       ) : (
@@ -225,7 +399,11 @@ function Debtors() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--ledger-border)]">
-                  {debtors.map((debtor) => (
+                  {visibleDebtors.map((debtor) => {
+                    const daysOpen = getDaysOpen(debtor.date);
+                    const isOverdue = daysOpen >= 30;
+
+                    return (
                     <tr
                       key={debtor.id}
                       className="transition-colors hover:bg-[var(--ledger-surface-hover)]"
@@ -245,9 +423,22 @@ function Debtors() {
                         )}
                       </td>
                       <td className="px-5 py-3.5 align-top">
-                        <span className="font-mono-tabular text-xs font-medium text-[var(--ledger-ink-muted)]">
-                          {formatEntryDate(debtor.date)}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-mono-tabular text-xs font-medium text-[var(--ledger-ink-muted)]">
+                            {formatEntryDate(debtor.date)}
+                          </span>
+                          {daysOpen > 0 && (
+                            <span
+                              className={`font-mono-tabular inline-flex items-center rounded border px-1.5 py-0.5 text-[0.68rem] font-semibold ${
+                                isOverdue
+                                  ? 'border-red-200 bg-[var(--ledger-danger-soft)] text-[var(--ledger-danger)]'
+                                  : 'border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[var(--ledger-ink-subtle)]'
+                              }`}
+                            >
+                              há {daysOpen}d
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="font-mono-tabular px-5 py-3.5 text-right align-top text-[0.95rem] font-bold text-[var(--ledger-ink)]">
                         {formatCurrency(debtor.value)}
@@ -284,7 +475,8 @@ function Debtors() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -292,7 +484,11 @@ function Debtors() {
 
           {/* Mobile Ledger Ticket Cards (Android & iOS friendly) */}
           <div className="space-y-3 md:hidden">
-            {debtors.map((debtor) => (
+            {visibleDebtors.map((debtor) => {
+              const daysOpen = getDaysOpen(debtor.date);
+              const isOverdue = daysOpen >= 30;
+
+              return (
               <article
                 key={debtor.id}
                 className="rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-4 shadow-2xs"
@@ -302,12 +498,23 @@ function Debtors() {
                     <h3 className="truncate text-base font-bold text-[var(--ledger-ink)]">
                       {debtor.name}
                     </h3>
-                    <div className="mt-1 flex items-center gap-1.5 text-xs text-[var(--ledger-ink-subtle)]">
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--ledger-ink-subtle)]">
                       <CalendarClock className="size-3.5" />
                       <span>Entrada em</span>
                       <span className="font-mono-tabular font-medium text-[var(--ledger-ink-muted)]">
                         {formatEntryDate(debtor.date)}
                       </span>
+                      {daysOpen > 0 && (
+                        <span
+                          className={`font-mono-tabular inline-flex items-center rounded border px-1.5 py-0.5 text-[0.65rem] font-semibold ${
+                            isOverdue
+                              ? 'border-red-200 bg-[var(--ledger-danger-soft)] text-[var(--ledger-danger)]'
+                              : 'border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[var(--ledger-ink-subtle)]'
+                          }`}
+                        >
+                          há {daysOpen}d
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -361,7 +568,8 @@ function Debtors() {
                   </button>
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
@@ -370,6 +578,7 @@ function Debtors() {
         debtor={editingDebtor}
         onSave={handleSaveChanges}
         onClose={() => setEditingDebtor(null)}
+        isPending={updateDebtorMutation.isPending}
       />
 
       {/* Partial Pay Modal */}
@@ -395,6 +604,24 @@ function Debtors() {
                 {formatCurrency(payingDebtor?.value)}
               </strong>
             </div>
+            {hasValidPartial && (
+              <div className="mt-2 flex items-center justify-between gap-2 border-t border-dashed border-[var(--ledger-border-strong)] pt-2 text-xs">
+                {remainingBalance === 0 ? (
+                  <span className="font-semibold text-[var(--ledger-accent)]">
+                    Quitação integral — o registro será encerrado
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-[var(--ledger-ink-muted)]">
+                      Novo saldo após abatimento
+                    </span>
+                    <strong className="font-mono-tabular text-[var(--ledger-ink)]">
+                      {formatCurrency(remainingBalance)}
+                    </strong>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="ledger-field">
@@ -416,6 +643,24 @@ function Debtors() {
                 autoFocus
               />
             </div>
+            {payingBalance > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPartialAmount((payingBalance / 2).toFixed(2))}
+                  className="rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] px-2.5 py-1 text-xs font-semibold text-[var(--ledger-ink-muted)] transition-colors hover:bg-[var(--ledger-surface-muted)] hover:text-[var(--ledger-ink)]"
+                >
+                  50% ({formatCurrency(payingBalance / 2)})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPartialAmount(payingBalance.toFixed(2))}
+                  className="rounded-lg border border-[var(--ledger-accent)]/30 bg-[var(--ledger-accent-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--ledger-accent)] transition-colors hover:bg-[var(--ledger-accent)] hover:text-white"
+                >
+                  Quitar Tudo ({formatCurrency(payingBalance)})
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="ledger-form-actions">
@@ -423,6 +668,7 @@ function Debtors() {
               type="button"
               className="ledger-btn-secondary"
               onClick={() => setPayingDebtor(null)}
+              disabled={partialPayMutation.isPending}
             >
               Cancelar
             </button>
