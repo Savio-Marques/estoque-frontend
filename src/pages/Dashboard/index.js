@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Boxes,
@@ -14,7 +14,6 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useProductSummary, useProductMutations } from '../../hooks/useProducts';
 import { useCategories, useCategoryMutations } from '../../hooks/useCategories';
-import { useDebtors, useDebtorMutations } from '../../hooks/useDebtors';
 import {
   Sheet,
   SheetContent,
@@ -25,15 +24,10 @@ import {
 } from '@/components/ui/sheet';
 import Modal from '../../components/Modal';
 import AddProductForm from '../../components/AddProductForm';
+import AddDebtorModal from '../../components/AddDebtorModal';
 import ProfileModal from '../../components/ProfileModal';
 import StockMovementsModal from '../../components/StockMovementsModal';
 import { ledgerToast } from '../../components/LedgerToast';
-
-const formatCurrency = (value) =>
-  Number(value || 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  });
 
 function getInitials(name, username) {
   const source = (name || username || 'U').trim();
@@ -51,9 +45,7 @@ function Dashboard() {
   const [isMobileQuickMenuOpen, setIsMobileQuickMenuOpen] = useState(false);
 
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [debtorName, setDebtorName] = useState('');
-  const [debtorDescription, setDebtorDescription] = useState('');
-  const [debtorValue, setDebtorValue] = useState('');
+  const [prefilledDebtorName, setPrefilledDebtorName] = useState('');
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -62,60 +54,17 @@ function Dashboard() {
   const handleCloseModal = () => {
     setActiveModal(null);
     setNewCategoryName('');
-    setDebtorName('');
-    setDebtorDescription('');
-    setDebtorValue('');
+    setPrefilledDebtorName('');
   };
 
-  const handleOpenModal = (modalName) => {
+  const handleOpenModal = (modalName, initialName = '') => {
     setIsMobileQuickMenuOpen(false);
+    setPrefilledDebtorName(typeof initialName === 'string' ? initialName : '');
     setActiveModal(modalName);
   };
 
   const { data: summary } = useProductSummary();
   const { data: categories = [] } = useCategories({ enabled: activeModal === 'addProduct' });
-  const { data: debtorsData } = useDebtors({
-    paid: false,
-    enabled: activeModal === 'addPayment',
-  });
-  const { data: settledDebtorsData } = useDebtors({
-    paid: true,
-    enabled: activeModal === 'addPayment',
-  });
-  const existingDebtors = useMemo(
-    () => debtorsData?.debtorDTOList || [],
-    [debtorsData]
-  );
-  const settledDebtors = useMemo(
-    () => settledDebtorsData?.debtorDTOList || [],
-    [settledDebtorsData]
-  );
-
-  const matchedDebtor = useMemo(() => {
-    const normalized = debtorName.trim().toLowerCase();
-    if (!normalized) return null;
-    return existingDebtors.find((d) => d.name?.trim().toLowerCase() === normalized) || null;
-  }, [existingDebtors, debtorName]);
-
-  const matchedSettledDebtor = useMemo(() => {
-    const normalized = debtorName.trim().toLowerCase();
-    if (!normalized || matchedDebtor) return null;
-    return settledDebtors.find((d) => d.name?.trim().toLowerCase() === normalized) || null;
-  }, [settledDebtors, debtorName, matchedDebtor]);
-
-  const uniqueDebtorNames = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          [...existingDebtors, ...settledDebtors]
-            .map((d) => d.name?.trim())
-            .filter(Boolean)
-        )
-      ),
-    [existingDebtors, settledDebtors]
-  );
-
-  const parsedDebtorValue = parseFloat(debtorValue);
 
   const { addCategoryMutation } = useCategoryMutations({
     onAddSuccess: () => {
@@ -135,11 +84,6 @@ function Dashboard() {
     },
   });
 
-  const { addDebtorMutation, updateDebtorMutation } = useDebtorMutations({
-    onAddSuccess: () => handleCloseModal(),
-    onUpdateSuccess: () => handleCloseModal(),
-  });
-
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -153,42 +97,6 @@ function Dashboard() {
 
   const handleSaveProduct = (productData) => {
     addProductMutation.mutate(productData);
-  };
-
-  const handleSaveDebtor = (e) => {
-    e.preventDefault();
-    const trimmedName = debtorName.trim();
-    const newDesc = debtorDescription.trim();
-    const addedValue = parseFloat(debtorValue);
-
-    if (!trimmedName || Number.isNaN(addedValue)) return;
-
-    const isOutsideDebtorsView = !location.pathname.includes('/debtors');
-
-    if (matchedDebtor) {
-      const nextValue = Number((Number(matchedDebtor.value || 0) + addedValue).toFixed(2));
-      const combinedDesc = [matchedDebtor.description?.trim(), newDesc]
-        .filter(Boolean)
-        .join(' • ')
-        .slice(0, 255);
-
-      updateDebtorMutation.mutate({
-        id: matchedDebtor.id,
-        name: matchedDebtor.name,
-        description: combinedDesc,
-        value: nextValue,
-        transactionNote: newDesc || 'Nova compra adicionada',
-        _customToast: `Valor somado ao saldo de ${matchedDebtor.name}`,
-      });
-      return;
-    }
-
-    addDebtorMutation.mutate({
-      name: trimmedName,
-      description: newDesc,
-      value: addedValue,
-      _customToast: isOutsideDebtorsView ? 'Lançamento salvo na caderneta' : undefined,
-    });
   };
 
   const navItems = [
@@ -545,114 +453,11 @@ function Dashboard() {
         />
       </Modal>
 
-      <Modal
+      <AddDebtorModal
         isOpen={activeModal === 'addPayment'}
         onClose={handleCloseModal}
-        title="Novo Lançamento na Caderneta"
-      >
-        <form className="ledger-form" onSubmit={handleSaveDebtor}>
-          <div className="ledger-field">
-            <label htmlFor="debtorName">Nome do Cliente</label>
-            <input
-              id="debtorName"
-              list="existing-debtors-datalist"
-              className="ledger-input"
-              type="text"
-              value={debtorName}
-              onChange={(e) => setDebtorName(e.target.value)}
-              placeholder="Ex: João da Silva"
-              required
-              autoFocus
-            />
-            <datalist id="existing-debtors-datalist">
-              {uniqueDebtorNames.map((name) => (
-                <option key={name} value={name} />
-              ))}
-            </datalist>
-
-            {matchedDebtor && (
-              <div className="mt-1.5 rounded-xl border border-amber-300/80 bg-[var(--ledger-amber-soft)] px-3 py-2.5 text-xs text-amber-950">
-                <p className="font-semibold">
-                  Cliente já possui saldo em aberto de{' '}
-                  <span className="font-mono-tabular font-bold">
-                    {formatCurrency(matchedDebtor.value)}
-                  </span>
-                  .
-                </p>
-                <p className="mt-0.5 text-amber-900">
-                  Este lançamento será somado automaticamente à ficha existente de{' '}
-                  <strong>{matchedDebtor.name}</strong>.
-                </p>
-                {Number.isFinite(parsedDebtorValue) && parsedDebtorValue > 0 && (
-                  <p className="font-mono-tabular mt-1.5 border-t border-amber-300/60 pt-1.5 font-semibold text-amber-950">
-                    Saldo atual: {formatCurrency(matchedDebtor.value)} &rarr; Novo total:{' '}
-                    {formatCurrency(Number(matchedDebtor.value || 0) + parsedDebtorValue)}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {matchedSettledDebtor && (
-              <div className="mt-1.5 rounded-xl border border-[var(--ledger-accent)]/25 bg-[var(--ledger-accent-soft)]/70 px-3 py-2 text-xs text-[var(--ledger-ink)]">
-                <p className="font-semibold text-[var(--ledger-accent)]">
-                  Cliente recorrente encontrado ({matchedSettledDebtor.name})
-                </p>
-                <p className="mt-0.5 text-[var(--ledger-ink-muted)]">
-                  A ficha anterior já quitada será reaberta mantendo todo o histórico de compras.
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="ledger-field">
-            <label htmlFor="debtorDescription">Descrição / Itens</label>
-            <textarea
-              id="debtorDescription"
-              className="ledger-textarea"
-              value={debtorDescription}
-              onChange={(e) => setDebtorDescription(e.target.value)}
-              placeholder="Ex: 1 Coca-Cola 2L, 4 Biscoitos Amori..."
-              maxLength={255}
-            />
-          </div>
-
-          <div className="ledger-field">
-            <label htmlFor="debtorValue">
-              {matchedDebtor ? 'Valor a Somar ao Saldo' : 'Valor Devido'}
-            </label>
-            <div className="ledger-input-affix">
-              <span className="affix-prefix">R$</span>
-              <input
-                id="debtorValue"
-                className="ledger-input mono"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                value={debtorValue}
-                onChange={(e) => setDebtorValue(e.target.value)}
-                placeholder="0.00"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="ledger-form-actions">
-            <button type="button" className="ledger-btn-secondary" onClick={handleCloseModal}>
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="ledger-btn-primary"
-              disabled={addDebtorMutation.isPending || updateDebtorMutation.isPending}
-            >
-              {addDebtorMutation.isPending || updateDebtorMutation.isPending
-                ? 'Salvando...'
-                : 'Salvar Lançamento'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        initialClientName={prefilledDebtorName}
+      />
 
       <ProfileModal
         isOpen={isProfileOpen}

@@ -42,15 +42,23 @@ export function useDebtorMutations({
 } = {}) {
   const queryClient = useQueryClient();
 
-  const invalidateDebtorData = () => {
+  const invalidateDebtorData = (hasStockDeduction = false) => {
     queryClient.invalidateQueries({ queryKey: ['debtors'] });
     queryClient.invalidateQueries({ queryKey: ['debtor-transactions'] });
+    if (hasStockDeduction) {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['summary'] });
+      queryClient.invalidateQueries({ queryKey: ['movements'] });
+    }
   };
 
   const addDebtorMutation = useMutation({
     mutationFn: ({ _customToast, ...data }) => api.post('/debtor', data),
     onSuccess: (_data, variables) => {
-      invalidateDebtorData();
+      const hasStockDeduction = Boolean(
+        variables?.stockItems?.length && variables?.deductFromStock !== false
+      );
+      invalidateDebtorData(hasStockDeduction);
       if (variables?._customToast) {
         ledgerToast.success(variables._customToast);
       }
@@ -62,10 +70,29 @@ export function useDebtorMutations({
   });
 
   const updateDebtorMutation = useMutation({
-    mutationFn: ({ id, name, description, value, transactionNote }) =>
-      api.put(`/debtor/${id}`, { id, name, description, value, transactionNote }),
+    mutationFn: ({
+      id,
+      name,
+      description,
+      value,
+      transactionNote,
+      stockItems,
+      deductFromStock,
+    }) =>
+      api.put(`/debtor/${id}`, {
+        id,
+        name,
+        description,
+        value,
+        transactionNote,
+        stockItems,
+        deductFromStock,
+      }),
     onSuccess: (_data, variables) => {
-      invalidateDebtorData();
+      const hasStockDeduction = Boolean(
+        variables?.stockItems?.length && variables?.deductFromStock !== false
+      );
+      invalidateDebtorData(hasStockDeduction);
       if (variables?._customToast) {
         ledgerToast.success(variables._customToast);
       }
@@ -79,7 +106,7 @@ export function useDebtorMutations({
   const partialPayMutation = useMutation({
     mutationFn: ({ id, amount }) => api.patch(`/debtor/${id}/pay`, { amount }),
     onSuccess: (res) => {
-      invalidateDebtorData();
+      invalidateDebtorData(false);
       if (res.status === 204) {
         ledgerToast.success('Conta quitada · movida para Quitados');
       }
@@ -93,7 +120,7 @@ export function useDebtorMutations({
   const markAsPaidMutation = useMutation({
     mutationFn: (id) => api.patch(`/debtor/${id}/settle`),
     onSuccess: () => {
-      invalidateDebtorData();
+      invalidateDebtorData(false);
       ledgerToast.success('Conta quitada · movida para Quitados');
       if (onPaidSuccess) onPaidSuccess();
     },
@@ -105,7 +132,7 @@ export function useDebtorMutations({
   const deleteDebtorMutation = useMutation({
     mutationFn: (id) => api.delete(`/debtor/${id}`),
     onSuccess: () => {
-      invalidateDebtorData();
+      invalidateDebtorData(false);
       if (onDeleteSuccess) onDeleteSuccess();
     },
     onError: (error) => {

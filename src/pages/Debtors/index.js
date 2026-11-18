@@ -636,6 +636,14 @@ function Debtors() {
                               <>
                                 <button
                                   type="button"
+                                  onClick={() => openModal?.('addPayment', debtor.name)}
+                                  className="inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-lg border border-[var(--ledger-accent)]/30 bg-[var(--ledger-accent-soft)] px-2.5 text-xs font-semibold text-[var(--ledger-accent)] transition-colors hover:bg-[var(--ledger-accent)] hover:text-white"
+                                >
+                                  <Plus className="size-3.5" />
+                                  <span>Compra</span>
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => {
                                     setPayingDebtor(debtor);
                                     setPartialAmount('');
@@ -777,11 +785,19 @@ function Debtors() {
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openModal?.('addPayment', debtor.name)}
+                          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-[var(--ledger-accent)]/30 bg-[var(--ledger-accent-soft)] px-2 text-xs font-semibold text-[var(--ledger-accent)] active:scale-95"
+                        >
+                          <Plus className="size-3.5 shrink-0" />
+                          <span>Compra</span>
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleOpenStatement(debtor)}
-                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-2 text-xs font-semibold text-[var(--ledger-ink-muted)] active:scale-95"
+                          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-2 text-xs font-semibold text-[var(--ledger-ink-muted)] active:scale-95"
                         >
                           <History className="size-3.5 shrink-0" />
                           <span>Extrato</span>
@@ -789,7 +805,7 @@ function Debtors() {
                         <button
                           type="button"
                           onClick={() => setEditingDebtor(debtor)}
-                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-2 text-xs font-semibold text-[var(--ledger-ink-muted)] active:scale-95"
+                          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-2 text-xs font-semibold text-[var(--ledger-ink-muted)] active:scale-95"
                         >
                           <Pencil className="size-3.5 shrink-0" />
                           <span>Editar</span>
