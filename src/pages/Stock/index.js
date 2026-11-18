@@ -339,11 +339,12 @@ function Stock() {
           type="button"
           onClick={() => setStockFilter('all')}
           aria-pressed={stockFilter === 'all'}
-          className="w-full rounded-xl text-left transition-transform active:scale-[0.99]"
+          className="flex h-full w-full rounded-xl text-left transition-transform active:scale-[0.99]"
         >
           <InsightCard
             label="Total de Produtos"
             value={<NumberTicker value={Number(summary?.totalProduct || 0)} format={formatInteger} />}
+            subtitle="Itens no catálogo"
             icon={<Boxes className="size-4 text-[var(--ledger-accent)]" />}
             className={`cursor-pointer rounded-xl border bg-[var(--ledger-surface)] shadow-none transition-colors hover:border-[var(--ledger-border-strong)] ${
               stockFilter === 'all'
@@ -357,11 +358,12 @@ function Stock() {
           type="button"
           onClick={() => setStockFilter((prev) => (prev === 'low' ? 'all' : 'low'))}
           aria-pressed={stockFilter === 'low'}
-          className="w-full rounded-xl text-left transition-transform active:scale-[0.99]"
+          className="flex h-full w-full rounded-xl text-left transition-transform active:scale-[0.99]"
         >
           <InsightCard
             label="Estoque Baixo"
             value={<NumberTicker value={Number(summary?.lowStock || 0)} format={formatInteger} />}
+            subtitle="Abaixo do nível mínimo"
             icon={<AlertTriangle className="size-4 text-[var(--ledger-amber)]" />}
             className={`cursor-pointer rounded-xl border bg-[var(--ledger-surface)] shadow-none transition-colors hover:border-amber-400 ${
               stockFilter === 'low'
@@ -379,11 +381,12 @@ function Stock() {
             setStockFilter((prev) => (prev === 'out_of_stock' ? 'all' : 'out_of_stock'))
           }
           aria-pressed={stockFilter === 'out_of_stock'}
-          className="w-full rounded-xl text-left transition-transform active:scale-[0.99]"
+          className="flex h-full w-full rounded-xl text-left transition-transform active:scale-[0.99]"
         >
           <InsightCard
             label="Sem Estoque"
             value={<NumberTicker value={Number(summary?.noStock || 0)} format={formatInteger} />}
+            subtitle="Itens esgotados"
             icon={<PackageX className="size-4 text-[var(--ledger-danger)]" />}
             className={`cursor-pointer rounded-xl border bg-[var(--ledger-surface)] shadow-none transition-colors hover:border-red-400 ${
               stockFilter === 'out_of_stock'
@@ -397,18 +400,8 @@ function Stock() {
 
         <InsightCard
           label="Custo em Estoque"
-          value={
-            <div className="flex flex-col">
-              <NumberTicker
-                value={Number(summary?.totalStockValue || 0)}
-                format={formatCurrency}
-                className="text-xl sm:text-2xl"
-              />
-              <span className="font-mono-tabular mt-1 text-[0.72rem] font-medium text-[var(--ledger-ink-subtle)]">
-                Potencial de venda: {formatCurrency(summary?.totalSaleValue || 0)}
-              </span>
-            </div>
-          }
+          value={<NumberTicker value={Number(summary?.totalStockValue || 0)} format={formatCurrency} />}
+          subtitle={`Potencial de venda: ${formatCurrency(summary?.totalSaleValue || 0)}`}
           icon={<Wallet className="size-4 text-[var(--ledger-accent)]" />}
           className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
         />

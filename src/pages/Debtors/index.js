@@ -218,6 +218,7 @@ function Debtors() {
               format={formatCurrency}
             />
           }
+          subtitle="Saldo total pendente"
           icon={<Wallet className="size-4 text-[var(--ledger-accent)]" />}
           className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] shadow-none"
         />
@@ -226,7 +227,7 @@ function Debtors() {
           type="button"
           onClick={() => setOnlyOverdue(false)}
           aria-pressed={!onlyOverdue}
-          className="w-full rounded-xl text-left transition-transform active:scale-[0.99]"
+          className="flex h-full w-full rounded-xl text-left transition-transform active:scale-[0.99]"
         >
           <InsightCard
             label="Clientes em Aberto"
@@ -236,6 +237,7 @@ function Debtors() {
                 format={formatInteger}
               />
             }
+            subtitle="Contas ativas na caderneta"
             icon={<Users className="size-4 text-[var(--ledger-amber)]" />}
             className={`cursor-pointer rounded-xl border bg-[var(--ledger-surface)] shadow-none transition-colors hover:border-[var(--ledger-border-strong)] ${
               !onlyOverdue
@@ -249,18 +251,12 @@ function Debtors() {
           type="button"
           onClick={() => setOnlyOverdue((prev) => !prev)}
           aria-pressed={onlyOverdue}
-          className="w-full rounded-xl text-left transition-transform active:scale-[0.99]"
+          className="flex h-full w-full rounded-xl text-left transition-transform active:scale-[0.99]"
         >
           <InsightCard
             label="Acima de 30 Dias"
-            value={
-              <div className="flex flex-col">
-                <NumberTicker value={overdueStats.count} format={formatInteger} />
-                <span className="font-mono-tabular mt-1 text-[0.72rem] font-medium text-[var(--ledger-ink-subtle)]">
-                  {formatCurrency(overdueStats.total)} em atraso
-                </span>
-              </div>
-            }
+            value={<NumberTicker value={overdueStats.count} format={formatInteger} />}
+            subtitle={`${formatCurrency(overdueStats.total)} em atraso`}
             icon={
               <AlertTriangle
                 className={`size-4 ${
