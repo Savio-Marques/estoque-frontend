@@ -114,10 +114,10 @@ function Users() {
   return (
     <div className="space-y-6">
       {/* Editorial Header */}
-      <div className="flex flex-col gap-4 border-b border-[var(--ledger-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-[1.75rem]">
+      <div className="flex flex-col gap-3.5 border-b border-[var(--ledger-border)] pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:pb-5">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            <h2 className="text-xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-2xl lg:text-[1.75rem]">
               Gerenciar Usuários
             </h2>
             {!isLoading && (
@@ -133,7 +133,7 @@ function Users() {
               </div>
             )}
           </div>
-          <p className="mt-1 hidden text-sm text-[var(--ledger-ink-muted)] sm:block">
+          <p className="mt-1 hidden max-w-xl text-sm text-[var(--ledger-ink-muted)] md:block">
             Controle credenciais de acesso e permissões operacionais da equipe.
           </p>
         </div>
@@ -141,9 +141,9 @@ function Users() {
         <button
           type="button"
           onClick={() => setIsCreateOpen(true)}
-          className="ledger-btn-primary self-start sm:self-auto"
+          className="ledger-btn-primary w-full sm:w-auto sm:shrink-0"
         >
-          <UserPlus className="size-4" />
+          <UserPlus className="size-4 shrink-0" />
           <span>Novo Usuário</span>
         </button>
       </div>

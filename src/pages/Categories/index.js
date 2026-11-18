@@ -95,10 +95,10 @@ function Categories() {
   return (
     <div className="space-y-6">
       {/* Editorial Header */}
-      <div className="flex flex-col gap-4 border-b border-[var(--ledger-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-[1.75rem]">
+      <div className="flex flex-col gap-3.5 border-b border-[var(--ledger-border)] pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:pb-5">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            <h2 className="text-xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-2xl lg:text-[1.75rem]">
               Gerenciar Categorias
             </h2>
             {!isLoading && (
@@ -114,7 +114,7 @@ function Categories() {
               </div>
             )}
           </div>
-          <p className="mt-1 hidden text-sm text-[var(--ledger-ink-muted)] sm:block">
+          <p className="mt-1 hidden max-w-xl text-sm text-[var(--ledger-ink-muted)] md:block">
             Organize os produtos do estoque em grupos claros e acompanhe a distribuição por setor.
           </p>
         </div>
@@ -123,9 +123,9 @@ function Categories() {
           <button
             type="button"
             onClick={() => openModal('addCategory')}
-            className="ledger-btn-primary self-start sm:self-auto"
+            className="ledger-btn-primary w-full sm:w-auto sm:shrink-0"
           >
-            <Plus className="size-4" />
+            <Plus className="size-4 shrink-0" />
             <span>Nova Categoria</span>
           </button>
         )}

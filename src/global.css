@@ -74,10 +74,6 @@
   .pb-safe-nav {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-
-  .pt-safe-top {
-    padding-top: env(safe-area-inset-top, 0px);
-  }
 }
 
 /* Shared Editorial Form & Search Primitives inside @layer components so Tailwind utilities can override cleanly */

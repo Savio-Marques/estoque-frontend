@@ -317,20 +317,24 @@ function Stock() {
   return (
     <div className="space-y-6">
       {/* Contextual Editorial Header */}
-      <div className="flex flex-col gap-4 border-b border-[var(--ledger-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-[1.75rem]">
+      <div className="flex flex-col gap-3.5 border-b border-[var(--ledger-border)] pb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:pb-5">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl font-extrabold tracking-tight text-[var(--ledger-ink)] sm:text-2xl lg:text-[1.75rem]">
             Controle de Estoque
           </h2>
-          <p className="mt-1 hidden text-sm text-[var(--ledger-ink-muted)] sm:block">
+          <p className="mt-1 hidden max-w-xl text-sm text-[var(--ledger-ink-muted)] md:block">
             Gerencie quantidades em tempo real, níveis mínimos e precificação dos itens.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="grid w-full grid-cols-2 gap-2.5 sm:flex sm:w-auto sm:shrink-0 sm:items-center">
           {openMovements && (
-            <button type="button" onClick={openMovements} className="ledger-btn-secondary">
-              <History className="size-4 text-[var(--ledger-ink-muted)]" />
+            <button
+              type="button"
+              onClick={openMovements}
+              className="ledger-btn-secondary w-full sm:w-auto"
+            >
+              <History className="size-4 shrink-0 text-[var(--ledger-ink-muted)]" />
               <span>Histórico</span>
             </button>
           )}
@@ -338,9 +342,9 @@ function Stock() {
             <button
               type="button"
               onClick={() => openModal('addProduct')}
-              className="ledger-btn-primary"
+              className="ledger-btn-primary w-full sm:w-auto"
             >
-              <Plus className="size-4" />
+              <Plus className="size-4 shrink-0" />
               <span>Novo Produto</span>
             </button>
           )}

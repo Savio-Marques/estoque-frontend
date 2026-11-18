@@ -168,7 +168,7 @@ function Dashboard() {
 
       {/* Desktop Sidebar (>= lg) */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col bg-[var(--ledger-sidebar-bg)] text-stone-100 border-r border-white/10">
-        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
+        <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-400/25">
             <PackageCheck className="size-5" />
           </div>
@@ -288,50 +288,63 @@ function Dashboard() {
         </div>
       </aside>
 
-      {/* Mobile Compact Sticky Topbar (< lg) */}
-      <header className="pt-safe-top sticky top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[var(--ledger-sidebar-bg)] px-4 py-2.5 text-white lg:hidden">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">
-            <PackageCheck className="size-4" />
+      {/* Mobile & Tablet Sticky Topbar (< lg) */}
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-[var(--ledger-sidebar-bg)] pt-[env(safe-area-inset-top,0px)] text-white lg:hidden">
+        <div className="mx-auto flex h-14 max-w-[1380px] items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <div className="flex size-8 sm:size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-400/25">
+              <PackageCheck className="size-4 sm:size-[1.125rem]" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm sm:text-[0.95rem] font-bold tracking-tight text-white">
+                Estoque &amp; Caderneta
+              </p>
+              <p className="hidden truncate text-[0.65rem] font-medium uppercase tracking-widest text-stone-400 sm:block">
+                Painel Operacional
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold tracking-tight">Estoque &amp; Caderneta</p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setIsMobileQuickMenuOpen(true)}
-            className="inline-flex h-9 items-center gap-1 rounded-lg bg-[var(--ledger-accent)] px-2.5 text-xs font-semibold text-white transition-colors active:scale-95"
-          >
-            <Plus className="size-4" />
-            <span>Novo</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsMovementsOpen(true)}
-            title="Histórico de Estoque"
-            aria-label="Histórico de Estoque"
-            className="flex size-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-stone-200 hover:bg-white/10"
-          >
-            <History className="size-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsProfileOpen(true)}
-            title="Meu Perfil"
-            aria-label="Meu Perfil"
-            className="flex size-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-stone-200 hover:bg-white/10"
-          >
-            <UserCog className="size-4" />
-          </button>
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => setIsMobileQuickMenuOpen(true)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-400/25 bg-emerald-500/15 px-2.5 sm:px-3 text-xs font-semibold text-emerald-300 transition-colors hover:bg-emerald-500/25 active:scale-95"
+            >
+              <Plus className="size-4 shrink-0" />
+              <span>Novo</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsMovementsOpen(true)}
+              title="Histórico de Estoque"
+              aria-label="Histórico de Estoque"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 text-xs font-medium text-stone-200 transition-colors hover:bg-white/10"
+            >
+              <History className="size-4 shrink-0" />
+              <span className="hidden md:inline">Histórico</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsProfileOpen(true)}
+              title="Meu Perfil"
+              aria-label="Meu Perfil"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-2 sm:px-2.5 text-xs font-medium text-stone-200 transition-colors hover:bg-white/10"
+            >
+              <span className="font-mono-tabular flex size-5 shrink-0 items-center justify-center rounded bg-emerald-500/20 text-[0.65rem] font-bold text-emerald-300">
+                {userInitials}
+              </span>
+              <span className="hidden max-w-[100px] truncate md:inline">
+                {user?.name || 'Perfil'}
+              </span>
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Content Area */}
       <div className="min-w-0 flex-1 lg:pl-64">
-        <main className="mx-auto w-full max-w-[1380px] px-4 py-5 pb-28 sm:px-6 lg:px-8 lg:py-8 lg:pb-10">
+        <main className="mx-auto w-full max-w-[1380px] px-4 pt-5 pb-28 sm:px-6 sm:pt-6 lg:px-8 lg:pt-7 lg:pb-10">
           <Outlet
             context={{
               summary,
