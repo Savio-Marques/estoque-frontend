@@ -25,7 +25,7 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, children, confir
       }}
     >
       <AlertDialogContent
-        size="sm"
+        size="default"
         className="bg-[var(--ledger-surface)] border border-[var(--ledger-border)] text-[var(--ledger-ink)] shadow-2xl"
       >
         <AlertDialogHeader>
@@ -46,7 +46,7 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, children, confir
             {children}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="border-t border-[var(--ledger-border)] bg-[var(--ledger-bg)]/60">
+        <AlertDialogFooter className="border-t border-[var(--ledger-border)] pt-4">
           <AlertDialogCancel className="border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] text-[var(--ledger-ink)] hover:bg-[var(--ledger-surface-muted)]">
             Cancelar
           </AlertDialogCancel>

@@ -330,7 +330,7 @@ function Dashboard() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 lg:pl-64">
+      <div className="min-w-0 flex-1 lg:pl-64">
         <main className="mx-auto w-full max-w-[1380px] px-4 py-5 pb-28 sm:px-6 lg:px-8 lg:py-8 lg:pb-10">
           <Outlet
             context={{
@@ -384,7 +384,7 @@ function Dashboard() {
       <Sheet open={isMobileQuickMenuOpen} onOpenChange={setIsMobileQuickMenuOpen}>
         <SheetContent
           side="bottom"
-          className="bg-[var(--ledger-surface)] border-t border-[var(--ledger-border)] text-[var(--ledger-ink)] pb-safe-nav"
+          className="bg-[var(--ledger-surface)] border-t border-[var(--ledger-border)] text-[var(--ledger-ink)]"
         >
           <SheetHeader className="border-b border-[var(--ledger-border)] pb-3">
             <SheetTitle className="text-base font-bold text-[var(--ledger-ink)]">
@@ -394,7 +394,7 @@ function Dashboard() {
               Escolha o que deseja registrar agora
             </SheetDescription>
           </SheetHeader>
-          <SheetBody className="py-4 space-y-2.5">
+          <SheetBody className="py-4 pb-6 space-y-2.5">
             <button
               type="button"
               onClick={() => handleOpenModal('addProduct')}

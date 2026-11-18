@@ -75,7 +75,7 @@ function StockMovementsModal({ isOpen, onClose }) {
     >
       <SheetContent
         side="right"
-        className="w-full sm:max-w-[540px] bg-[var(--ledger-surface)] border-l border-[var(--ledger-border)] text-[var(--ledger-ink)]"
+        className="w-[calc(100%+var(--bleed))] max-sm:rounded-none sm:w-[calc(100%-2rem+var(--bleed))] sm:max-w-[calc(540px+var(--bleed))] bg-[var(--ledger-surface)] border-l border-[var(--ledger-border)] text-[var(--ledger-ink)]"
       >
         <SheetHeader className="border-b border-[var(--ledger-border)] pb-4">
           <div className="flex items-center gap-2.5">
