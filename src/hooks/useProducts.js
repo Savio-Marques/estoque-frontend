@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import api from '../services/api';
 
@@ -40,6 +40,7 @@ export function useProducts({
   return useQuery({
     queryKey: ['products', searchTerm, stockFilter, categoryFilter],
     enabled,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       let list = [];
 

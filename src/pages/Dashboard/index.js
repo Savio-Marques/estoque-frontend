@@ -164,7 +164,7 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[var(--ledger-bg)] text-[var(--ledger-ink)] lg:flex">
-      <ToastContainer position="top-right" autoClose={3000} theme="light" />
+      <ToastContainer position="bottom-right" autoClose={3000} theme="light" />
 
       {/* Desktop Sidebar (>= lg) */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col bg-[var(--ledger-sidebar-bg)] text-stone-100 border-r border-white/10">
@@ -384,9 +384,9 @@ function Dashboard() {
       <Sheet open={isMobileQuickMenuOpen} onOpenChange={setIsMobileQuickMenuOpen}>
         <SheetContent
           side="bottom"
-          className="bg-[var(--ledger-surface)] border-t border-[var(--ledger-border)] text-[var(--ledger-ink)]"
+          className="bg-[var(--ledger-surface)] border-t border-[var(--ledger-border)] text-[var(--ledger-ink)] [--sheet-close-top:1.4rem]"
         >
-          <SheetHeader className="border-b border-[var(--ledger-border)] pb-3">
+          <SheetHeader className="border-b border-[var(--ledger-border)] pb-3 max-sm:pt-7">
             <SheetTitle className="text-base font-bold text-[var(--ledger-ink)]">
               Cadastro Rápido
             </SheetTitle>

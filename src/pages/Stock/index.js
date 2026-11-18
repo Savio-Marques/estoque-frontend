@@ -93,6 +93,9 @@ function Stock() {
     }
     return typeof window !== 'undefined' && window.innerWidth >= 768 ? 'list' : 'grid';
   });
+  const [isBelowMd, setIsBelowMd] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false
+  );
   const [pendingQuantities, setPendingQuantities] = useState({});
 
   const searchInputRef = useRef(null);
@@ -163,7 +166,18 @@ function Stock() {
     }
   };
 
-  const { data: products = [], isLoading, isError } = useProducts({
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const mql = window.matchMedia('(max-width: 767px)');
+    const handleChange = (e) => setIsBelowMd(e.matches);
+    setIsBelowMd(mql.matches);
+    mql.addEventListener('change', handleChange);
+    return () => mql.removeEventListener('change', handleChange);
+  }, []);
+
+  const effectiveViewMode = isBelowMd ? 'grid' : viewMode;
+
+  const { data: products = [], isLoading, isFetching, isError } = useProducts({
     searchTerm: debouncedSearch,
     stockFilter,
     categoryFilter,
@@ -470,7 +484,7 @@ function Stock() {
                     key={chip.key}
                     type="button"
                     onClick={() => setStockFilter(chip.key)}
-                    className={`rounded-lg px-3 py-2 sm:py-1.5 text-xs font-semibold transition-colors ${
+                    className={`inline-flex h-10 sm:h-9 items-center justify-center rounded-lg px-3 text-xs font-semibold transition-colors ${
                       active
                         ? 'bg-[var(--ledger-sidebar-bg)] text-white'
                         : 'border border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[var(--ledger-ink-muted)] hover:bg-[var(--ledger-surface-muted)] hover:text-[var(--ledger-ink)]'
@@ -483,18 +497,22 @@ function Stock() {
             </div>
 
             {/* HextaUI Tabs View Switcher */}
-            <Tabs value={viewMode} onValueChange={handleViewModeChange} className="w-auto">
-              <TabsList className="h-9 rounded-lg border border-[var(--ledger-border)] bg-[var(--ledger-bg)] p-0.5">
+            <Tabs
+              value={viewMode}
+              onValueChange={handleViewModeChange}
+              className="hidden md:flex w-auto"
+            >
+              <TabsList className="h-9 rounded-lg border border-[var(--ledger-border)] bg-[var(--ledger-bg)] p-1">
                 <TabsTrigger
                   value="grid"
-                  className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold data-[active]:bg-[var(--ledger-surface)] data-[active]:text-[var(--ledger-ink)] data-[active]:shadow-xs"
+                  className="inline-flex h-full pointer-coarse:h-full items-center gap-1.5 rounded-md px-2.5 py-0 text-xs font-semibold text-[var(--ledger-ink-muted)] data-[active]:text-[var(--ledger-ink)]"
                 >
                   <LayoutGrid className="size-3.5" />
                   <span>Grade</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="list"
-                  className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold data-[active]:bg-[var(--ledger-surface)] data-[active]:text-[var(--ledger-ink)] data-[active]:shadow-xs"
+                  className="inline-flex h-full pointer-coarse:h-full items-center gap-1.5 rounded-md px-2.5 py-0 text-xs font-semibold text-[var(--ledger-ink-muted)] data-[active]:text-[var(--ledger-ink)]"
                 >
                   <List className="size-3.5" />
                   <span>Lista</span>
@@ -537,9 +555,13 @@ function Stock() {
             </button>
           )}
         </div>
-      ) : viewMode === 'grid' ? (
+      ) : effectiveViewMode === 'grid' ? (
         /* Grid View: Technical Spec Cards */
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div
+          className={`grid grid-cols-1 gap-4 transition-opacity duration-150 md:grid-cols-2 xl:grid-cols-3 ${
+            isFetching ? 'opacity-65' : 'opacity-100'
+          }`}
+        >
           {displayedProducts.map((product) => {
             const statusMeta = getProductStatusMeta(product);
             const margin = getMarginPercent(product.costPrice, product.salePrice);
@@ -551,7 +573,7 @@ function Stock() {
                 key={product.id}
                 className="group flex flex-col justify-between rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-4 transition-all hover:border-[var(--ledger-border-strong)] hover:shadow-sm"
               >
-                <div>
+                <div className="flex flex-1 flex-col">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate rounded-md border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-2 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wider text-[var(--ledger-ink-muted)]">
                       {categoryLabel}
@@ -573,34 +595,36 @@ function Stock() {
                     {product.name}
                   </h3>
 
-                  <div className="mt-3.5 grid grid-cols-3 gap-2 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)]/70 p-2.5">
-                    <div>
-                      <span className="block text-[0.66rem] font-semibold uppercase tracking-wider text-[var(--ledger-ink-subtle)]">
-                        Custo
-                      </span>
-                      <span className="font-mono-tabular mt-0.5 block text-xs font-semibold text-[var(--ledger-ink-muted)]">
-                        {formatCurrency(product.costPrice)}
-                      </span>
-                    </div>
+                  <div className="mt-auto pt-3.5">
+                    <div className="grid grid-cols-3 gap-2 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)]/70 p-2.5">
+                      <div>
+                        <span className="block text-[0.66rem] font-semibold uppercase tracking-wider text-[var(--ledger-ink-subtle)]">
+                          Custo
+                        </span>
+                        <span className="font-mono-tabular mt-0.5 block text-xs font-semibold text-[var(--ledger-ink-muted)]">
+                          {formatCurrency(product.costPrice)}
+                        </span>
+                      </div>
 
-                    <div>
-                      <span className="block text-[0.66rem] font-semibold uppercase tracking-wider text-[var(--ledger-ink-subtle)]">
-                        Venda
-                      </span>
-                      <span className="font-mono-tabular mt-0.5 block text-xs font-bold text-[var(--ledger-ink)]">
-                        {formatCurrency(product.salePrice)}
-                      </span>
-                    </div>
+                      <div className="border-x border-[var(--ledger-border)] px-1.5 text-center">
+                        <span className="block text-[0.66rem] font-semibold uppercase tracking-wider text-[var(--ledger-ink-subtle)]">
+                          Venda
+                        </span>
+                        <span className="font-mono-tabular mt-0.5 block text-xs font-bold text-[var(--ledger-ink)]">
+                          {formatCurrency(product.salePrice)}
+                        </span>
+                      </div>
 
-                    <div className="text-right">
-                      <span className="block text-[0.66rem] font-semibold uppercase tracking-wider text-[var(--ledger-ink-subtle)]">
-                        {margin !== null ? 'Margem' : 'Mínimo'}
-                      </span>
-                      <span className="font-mono-tabular mt-0.5 block text-xs font-semibold text-[var(--ledger-accent)]">
-                        {margin !== null
-                          ? `${margin >= 0 ? '+' : ''}${margin.toFixed(0)}%`
-                          : `${product.minQuantity ?? 5} un.`}
-                      </span>
+                      <div className="text-right">
+                        <span className="block text-[0.66rem] font-semibold uppercase tracking-wider text-[var(--ledger-ink-subtle)]">
+                          {margin !== null ? 'Margem' : 'Mínimo'}
+                        </span>
+                        <span className="font-mono-tabular mt-0.5 block text-xs font-semibold text-[var(--ledger-accent)]">
+                          {margin !== null
+                            ? `${margin >= 0 ? '+' : ''}${margin.toFixed(0)}%`
+                            : `${product.minQuantity ?? 5} un.`}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -659,7 +683,11 @@ function Stock() {
         </div>
       ) : (
         /* List View: Dense Ledger Table */
-        <div className="overflow-hidden rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)]">
+        <div
+          className={`overflow-hidden rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] transition-opacity duration-150 ${
+            isFetching ? 'opacity-65' : 'opacity-100'
+          }`}
+        >
           <div className="overflow-x-auto">
             <table className="w-full min-w-[740px] border-collapse text-left text-sm">
               <thead>

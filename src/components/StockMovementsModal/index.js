@@ -75,7 +75,7 @@ function StockMovementsModal({ isOpen, onClose }) {
     >
       <SheetContent
         side="right"
-        className="w-[calc(100%+var(--bleed))] max-sm:rounded-none sm:w-[calc(100%-2rem+var(--bleed))] sm:max-w-[calc(540px+var(--bleed))] bg-[var(--ledger-surface)] border-l border-[var(--ledger-border)] text-[var(--ledger-ink)]"
+        className="w-[calc(100%+var(--bleed))] max-sm:rounded-none sm:w-[calc(100%-2rem+var(--bleed))] sm:max-w-[calc(540px+var(--bleed))] bg-[var(--ledger-surface)] border-l border-[var(--ledger-border)] text-[var(--ledger-ink)] [--sheet-close-top:1.25rem]"
       >
         <SheetHeader className="border-b border-[var(--ledger-border)] pb-4">
           <div className="flex items-center gap-2.5">
@@ -111,7 +111,7 @@ function StockMovementsModal({ isOpen, onClose }) {
               </p>
             </div>
           ) : (
-            <div className="relative space-y-3 pl-4 before:absolute before:top-2 before:bottom-2 before:left-[5px] before:w-px before:bg-[var(--ledger-border)]">
+            <div className="relative space-y-3 pl-6 before:absolute before:top-2 before:bottom-2 before:left-[7px] before:w-0.5 before:bg-[var(--ledger-border-strong)]">
               {movements.map((mov) => {
                 const meta = MOVEMENT_META[mov.movementType] || {
                   label: mov.movementType,
@@ -124,38 +124,38 @@ function StockMovementsModal({ isOpen, onClose }) {
                 const sign = mov.quantityDelta > 0 ? '+' : '';
 
                 return (
-                  <div
-                    key={mov.id}
-                    className="relative rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)]/70 p-3.5 transition-colors hover:bg-[var(--ledger-bg)]"
-                  >
+                  <div key={mov.id} className="relative">
                     <span
-                      className={`absolute top-4 -left-[15px] size-2.5 rounded-full ring-4 ring-[var(--ledger-surface)] ${meta.dotClass}`}
+                      className={`absolute top-4 -left-[21px] size-2.5 rounded-full ring-4 ring-[var(--ledger-surface)] ${meta.dotClass}`}
                     />
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wide ${meta.badgeClass}`}
-                          >
-                            <Icon className="size-3" />
-                            {meta.label}
-                          </span>
-                          <span className="font-mono-tabular text-[0.72rem] text-[var(--ledger-ink-subtle)]">
-                            {formatDateTime(mov.createdAt)}
-                          </span>
+                    <div className="rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)]/70 p-3.5 transition-colors hover:bg-[var(--ledger-bg)]">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wide ${meta.badgeClass}`}
+                            >
+                              <Icon className="size-3" />
+                              {meta.label}
+                            </span>
+                            <span className="font-mono-tabular text-[0.72rem] text-[var(--ledger-ink-subtle)]">
+                              {formatDateTime(mov.createdAt)}
+                            </span>
+                          </div>
+                          <p className="mt-1.5 truncate text-[0.92rem] font-semibold text-[var(--ledger-ink)]">
+                            {mov.productName}
+                          </p>
                         </div>
-                        <p className="mt-1.5 truncate text-[0.92rem] font-semibold text-[var(--ledger-ink)]">
-                          {mov.productName}
-                        </p>
-                      </div>
 
-                      <div className="shrink-0 text-right">
-                        <div className={`font-mono-tabular text-sm font-bold ${meta.deltaClass}`}>
-                          {sign}
-                          {mov.quantityDelta} un.
-                        </div>
-                        <div className="font-mono-tabular mt-0.5 text-[0.74rem] text-[var(--ledger-ink-subtle)]">
-                          {mov.previousQuantity} &rarr; <strong className="text-[var(--ledger-ink)]">{mov.newQuantity}</strong>
+                        <div className="shrink-0 text-right">
+                          <div className={`font-mono-tabular text-sm font-bold ${meta.deltaClass}`}>
+                            {sign}
+                            {mov.quantityDelta} un.
+                          </div>
+                          <div className="font-mono-tabular mt-0.5 text-[0.74rem] text-[var(--ledger-ink-subtle)]">
+                            {mov.previousQuantity} &rarr;{' '}
+                            <strong className="text-[var(--ledger-ink)]">{mov.newQuantity}</strong>
+                          </div>
                         </div>
                       </div>
                     </div>

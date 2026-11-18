@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import api from '../services/api';
 
@@ -6,6 +6,7 @@ export function useDebtors({ searchTerm = '', enabled = true } = {}) {
   return useQuery({
     queryKey: ['debtors', searchTerm],
     enabled,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append('name', searchTerm);

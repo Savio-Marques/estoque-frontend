@@ -101,7 +101,7 @@ function Debtors() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const { data: debtorsData, isLoading, isError } = useDebtors({
+  const { data: debtorsData, isLoading, isFetching, isError } = useDebtors({
     searchTerm: debouncedSearch,
   });
 
@@ -376,7 +376,11 @@ function Debtors() {
           )}
         </div>
       ) : (
-        <>
+        <div
+          className={`transition-opacity duration-150 ${
+            isFetching ? 'opacity-65' : 'opacity-100'
+          }`}
+        >
           {/* Desktop Digital Ledger Table */}
           <div className="hidden overflow-hidden rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] md:block">
             <div className="overflow-x-auto">
@@ -400,10 +404,10 @@ function Debtors() {
                       key={debtor.id}
                       className="transition-colors hover:bg-[var(--ledger-surface-hover)]"
                     >
-                      <td className="px-5 py-3.5 align-top">
+                      <td className="px-5 py-3.5 align-middle">
                         <span className="font-bold text-[var(--ledger-ink)]">{debtor.name}</span>
                       </td>
-                      <td className="max-w-sm px-5 py-3.5 align-top">
+                      <td className="max-w-sm px-5 py-3.5 align-middle">
                         {debtor.description ? (
                           <p className="text-[0.84rem] leading-snug text-[var(--ledger-ink-muted)]">
                             {debtor.description}
@@ -414,7 +418,7 @@ function Debtors() {
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 align-top">
+                      <td className="px-5 py-3.5 align-middle">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="font-mono-tabular text-xs font-medium text-[var(--ledger-ink-muted)]">
                             {formatEntryDate(debtor.date)}
@@ -432,10 +436,10 @@ function Debtors() {
                           )}
                         </div>
                       </td>
-                      <td className="font-mono-tabular px-5 py-3.5 text-right align-top text-[0.95rem] font-bold text-[var(--ledger-ink)]">
+                      <td className="font-mono-tabular px-5 py-3.5 text-right align-middle text-[0.95rem] font-bold text-[var(--ledger-ink)]">
                         {formatCurrency(debtor.value)}
                       </td>
-                      <td className="px-5 py-3.5 align-top">
+                      <td className="px-5 py-3.5 align-middle">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
@@ -534,9 +538,9 @@ function Debtors() {
                   <button
                     type="button"
                     onClick={() => setEditingDebtor(debtor)}
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] text-xs font-semibold text-[var(--ledger-ink)] active:scale-95"
+                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] px-2 text-xs font-semibold text-[var(--ledger-ink)] active:scale-95"
                   >
-                    <Pencil className="size-3.5" />
+                    <Pencil className="size-3.5 shrink-0" />
                     <span>Editar</span>
                   </button>
                   <button
@@ -545,17 +549,17 @@ function Debtors() {
                       setPayingDebtor(debtor);
                       setPartialAmount('');
                     }}
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-[var(--ledger-amber-soft)] text-xs font-semibold text-amber-900 active:scale-95"
+                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-[var(--ledger-amber-soft)] px-2 text-xs font-semibold text-amber-900 active:scale-95"
                   >
-                    <Coins className="size-3.5" />
+                    <Coins className="size-3.5 shrink-0" />
                     <span>Abater</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => handleConfirmPayment(debtor)}
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--ledger-accent)] text-xs font-semibold text-white active:scale-95"
+                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--ledger-accent)] px-2 text-xs font-semibold text-white active:scale-95"
                   >
-                    <CheckCheck className="size-3.5" />
+                    <CheckCheck className="size-3.5 shrink-0" />
                     <span>Quitar</span>
                   </button>
                 </div>
@@ -563,7 +567,7 @@ function Debtors() {
               );
             })}
           </div>
-        </>
+        </div>
       )}
 
       <EditDebtorModal
