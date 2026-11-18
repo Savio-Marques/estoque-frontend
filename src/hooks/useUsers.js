@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
+import { ledgerToast } from '../components/LedgerToast';
 import api from '../services/api';
 
 const getErrorMessage = (error, fallback) =>
@@ -32,36 +32,33 @@ export function useUserMutations({
   const createUserMutation = useMutation({
     mutationFn: (payload) => api.post('auth/register', payload),
     onSuccess: () => {
-      toast.success('Usuário cadastrado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['users'] });
       onCreateSuccess?.();
     },
     onError: (err) => {
-      toast.error(getErrorMessage(err, 'Erro ao cadastrar usuário.'));
+      ledgerToast.error(getErrorMessage(err, 'Erro ao cadastrar usuário.'));
     },
   });
 
   const updateUserMutation = useMutation({
     mutationFn: ({ id, ...payload }) => api.put(`users/${id}`, payload),
     onSuccess: () => {
-      toast.success('Usuário atualizado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['users'] });
       onUpdateSuccess?.();
     },
     onError: (err) => {
-      toast.error(getErrorMessage(err, 'Erro ao atualizar usuário.'));
+      ledgerToast.error(getErrorMessage(err, 'Erro ao atualizar usuário.'));
     },
   });
 
   const deleteUserMutation = useMutation({
     mutationFn: (id) => api.delete(`users/${id}`),
     onSuccess: () => {
-      toast.success('Usuário excluído com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['users'] });
       onDeleteSuccess?.();
     },
     onError: (err) => {
-      toast.error(getErrorMessage(err, 'Erro ao excluir usuário.'));
+      ledgerToast.error(getErrorMessage(err, 'Erro ao excluir usuário.'));
     },
   });
 

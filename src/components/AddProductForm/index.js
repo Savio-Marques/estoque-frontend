@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { toast } from 'react-toastify';
+import { AlertCircle } from 'lucide-react';
 import {
   CategoryFieldWithCreate,
   ProductPricingHelper,
@@ -12,14 +12,16 @@ function AddProductForm({ categories = [], onSave, onCancel, isPending = false }
   const [costPrice, setCostPrice] = useState('');
   const [salePrice, setSalePrice] = useState('');
   const [minQuantity, setMinQuantity] = useState('');
+  const [formError, setFormError] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim() || !categoryId || qtd === '') {
-      toast.error('Por favor, preencha nome, categoria e quantidade.');
+      setFormError('Preencha nome, categoria e quantidade inicial para continuar.');
       return;
     }
 
+    setFormError('');
     onSave({
       name: name.trim(),
       categoryId: parseInt(categoryId, 10),
@@ -32,6 +34,16 @@ function AddProductForm({ categories = [], onSave, onCancel, isPending = false }
 
   return (
     <form className="ledger-form" onSubmit={handleSubmit}>
+      {formError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-xl border border-red-200 bg-[var(--ledger-danger-soft)] px-3 py-2.5 text-xs font-medium text-[var(--ledger-danger)]"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          <span>{formError}</span>
+        </div>
+      )}
+
       <div className="ledger-field">
         <label htmlFor="add-product-name">Nome do Produto</label>
         <input
@@ -39,7 +51,10 @@ function AddProductForm({ categories = [], onSave, onCancel, isPending = false }
           className="ledger-input"
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (formError) setFormError('');
+          }}
           placeholder="Ex: Coca-Cola 2L"
           required
           autoFocus
@@ -50,7 +65,10 @@ function AddProductForm({ categories = [], onSave, onCancel, isPending = false }
         id="add-product-category"
         categories={categories}
         value={categoryId}
-        onChange={setCategoryId}
+        onChange={(nextCat) => {
+          setCategoryId(nextCat);
+          if (formError) setFormError('');
+        }}
         autoOpenWhenEmpty
         disabled={isPending}
       />
@@ -65,7 +83,10 @@ function AddProductForm({ categories = [], onSave, onCancel, isPending = false }
             inputMode="numeric"
             min="0"
             value={qtd}
-            onChange={(e) => setQtd(e.target.value)}
+            onChange={(e) => {
+              setQtd(e.target.value);
+              if (formError) setFormError('');
+            }}
             placeholder="0"
             required
           />

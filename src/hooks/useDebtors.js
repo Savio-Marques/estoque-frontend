@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
+import { ledgerToast } from '../components/LedgerToast';
 import api from '../services/api';
 
 export function useDebtors({ searchTerm = '', paid = false, enabled = true } = {}) {
@@ -48,14 +48,16 @@ export function useDebtorMutations({
   };
 
   const addDebtorMutation = useMutation({
-    mutationFn: (data) => api.post('/debtor', data),
-    onSuccess: () => {
+    mutationFn: ({ _customToast, ...data }) => api.post('/debtor', data),
+    onSuccess: (_data, variables) => {
       invalidateDebtorData();
-      toast.success('Lançamento registrado na caderneta!');
+      if (variables?._customToast) {
+        ledgerToast.success(variables._customToast);
+      }
       if (onAddSuccess) onAddSuccess();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao registrar lançamento.');
+      ledgerToast.error(error.response?.data?.message || 'Falha ao registrar lançamento.');
     },
   });
 
@@ -64,11 +66,13 @@ export function useDebtorMutations({
       api.put(`/debtor/${id}`, { id, name, description, value, transactionNote }),
     onSuccess: (_data, variables) => {
       invalidateDebtorData();
-      toast.success(variables?._customToast || 'Lançamento atualizado com sucesso!');
+      if (variables?._customToast) {
+        ledgerToast.success(variables._customToast);
+      }
       if (onUpdateSuccess) onUpdateSuccess();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao atualizar lançamento.');
+      ledgerToast.error(error.response?.data?.message || 'Falha ao atualizar lançamento.');
     },
   });
 
@@ -76,15 +80,13 @@ export function useDebtorMutations({
     mutationFn: ({ id, amount }) => api.patch(`/debtor/${id}/pay`, { amount }),
     onSuccess: (res) => {
       invalidateDebtorData();
-      toast.success(
-        res.status === 204
-          ? 'Dívida quitada e salva no histórico!'
-          : 'Abatimento registrado com sucesso!'
-      );
+      if (res.status === 204) {
+        ledgerToast.success('Conta quitada · movida para Quitados');
+      }
       if (onPaidSuccess) onPaidSuccess();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao registrar abatimento.');
+      ledgerToast.error(error.response?.data?.message || 'Falha ao registrar abatimento.');
     },
   });
 
@@ -92,11 +94,11 @@ export function useDebtorMutations({
     mutationFn: (id) => api.patch(`/debtor/${id}/settle`),
     onSuccess: () => {
       invalidateDebtorData();
-      toast.success('Conta quitada e salva no histórico!');
+      ledgerToast.success('Conta quitada · movida para Quitados');
       if (onPaidSuccess) onPaidSuccess();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao quitar conta.');
+      ledgerToast.error(error.response?.data?.message || 'Falha ao quitar conta.');
     },
   });
 
@@ -104,11 +106,10 @@ export function useDebtorMutations({
     mutationFn: (id) => api.delete(`/debtor/${id}`),
     onSuccess: () => {
       invalidateDebtorData();
-      toast.success('Registro excluído permanentemente.');
       if (onDeleteSuccess) onDeleteSuccess();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao excluir registro.');
+      ledgerToast.error(error.response?.data?.message || 'Falha ao excluir registro.');
     },
   });
 

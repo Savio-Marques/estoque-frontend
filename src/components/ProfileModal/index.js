@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { AlertCircle, LogOut } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import Modal from '../Modal';
@@ -11,6 +10,7 @@ function ProfileModal({ isOpen, onClose, onLogout }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [formError, setFormError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -19,23 +19,25 @@ function ProfileModal({ isOpen, onClose, onLogout }) {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setFormError('');
     }
   }, [isOpen, user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
 
     if (newPassword || currentPassword || confirmPassword) {
       if (!currentPassword) {
-        toast.error('Informe sua senha atual para alterar a senha.');
+        setFormError('Informe sua senha atual para alterar a senha.');
         return;
       }
       if (newPassword.length < 6) {
-        toast.error('A nova senha deve ter pelo menos 6 caracteres.');
+        setFormError('A nova senha deve ter pelo menos 6 caracteres.');
         return;
       }
       if (newPassword !== confirmPassword) {
-        toast.error('A confirmação de senha não confere.');
+        setFormError('A confirmação de senha não confere.');
         return;
       }
     }
@@ -48,11 +50,10 @@ function ProfileModal({ isOpen, onClose, onLogout }) {
         newPassword: newPassword || null,
       });
       updateUserName(response.data.name);
-      toast.success('Perfil atualizado com sucesso!');
       onClose();
     } catch (error) {
       const msg = error.response?.data?.message || 'Erro ao atualizar perfil.';
-      toast.error(msg);
+      setFormError(msg);
     } finally {
       setIsSaving(false);
     }
@@ -61,6 +62,16 @@ function ProfileModal({ isOpen, onClose, onLogout }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Meu Perfil">
       <form className="ledger-form" onSubmit={handleSubmit}>
+        {formError && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-xl border border-red-200 bg-[var(--ledger-danger-soft)] px-3 py-2.5 text-xs font-medium text-[var(--ledger-danger)]"
+          >
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            <span>{formError}</span>
+          </div>
+        )}
+
         <div className="ledger-field">
           <label htmlFor="profile-username">Usuário</label>
           <input
@@ -79,7 +90,10 @@ function ProfileModal({ isOpen, onClose, onLogout }) {
             className="ledger-input"
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (formError) setFormError('');
+            }}
             required
           />
         </div>
@@ -97,7 +111,10 @@ function ProfileModal({ isOpen, onClose, onLogout }) {
                 className="ledger-input"
                 type="password"
                 value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
+                onChange={(e) => {
+                  setCurrentPassword(e.target.value);
+                  if (formError) setFormError('');
+                }}
                 placeholder="Necessária apenas para trocar a senha"
               />
             </div>
@@ -110,7 +127,10 @@ function ProfileModal({ isOpen, onClose, onLogout }) {
                   className="ledger-input"
                   type="password"
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    if (formError) setFormError('');
+                  }}
                   placeholder="Mínimo 6 caracteres"
                 />
               </div>
@@ -122,7 +142,10 @@ function ProfileModal({ isOpen, onClose, onLogout }) {
                   className="ledger-input"
                   type="password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (formError) setFormError('');
+                  }}
                   placeholder="Repita a nova senha"
                 />
               </div>
@@ -149,7 +172,12 @@ function ProfileModal({ isOpen, onClose, onLogout }) {
         )}
 
         <div className="ledger-form-actions">
-          <button type="button" className="ledger-btn-secondary" onClick={onClose} disabled={isSaving}>
+          <button
+            type="button"
+            className="ledger-btn-secondary"
+            onClick={onClose}
+            disabled={isSaving}
+          >
             Cancelar
           </button>
           <button type="submit" className="ledger-btn-primary" disabled={isSaving}>

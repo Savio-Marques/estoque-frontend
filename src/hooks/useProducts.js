@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
+import { ledgerToast } from '../components/LedgerToast';
 import api from '../services/api';
 
 export function useProductSummary() {
@@ -93,11 +93,10 @@ export function useProductMutations({ onAddSuccess, onUpdateSuccess, onDeleteSuc
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['summary'] });
       queryClient.invalidateQueries({ queryKey: ['movements'] });
-      toast.success('Produto adicionado com sucesso!');
       if (onAddSuccess) onAddSuccess();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao adicionar produto.');
+      ledgerToast.error(error.response?.data?.message || 'Falha ao adicionar produto.');
     },
   });
 
@@ -138,12 +137,9 @@ export function useProductMutations({ onAddSuccess, onUpdateSuccess, onDeleteSuc
           queryClient.setQueryData(key, data);
         });
       }
-      toast.error(error.response?.data?.message || 'Falha ao atualizar produto.');
+      ledgerToast.error(error.response?.data?.message || 'Falha ao atualizar produto.');
     },
-    onSuccess: (_data, variables) => {
-      if (!variables._silentToast) {
-        toast.success('Produto atualizado com sucesso!');
-      }
+    onSuccess: () => {
       if (onUpdateSuccess) onUpdateSuccess();
     },
     onSettled: () => {
@@ -161,11 +157,10 @@ export function useProductMutations({ onAddSuccess, onUpdateSuccess, onDeleteSuc
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['summary'] });
       queryClient.invalidateQueries({ queryKey: ['movements'] });
-      toast.success('Produto deletado com sucesso!');
       if (onDeleteSuccess) onDeleteSuccess();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Falha ao deletar produto.');
+      ledgerToast.error(error.response?.data?.message || 'Falha ao deletar produto.');
     },
   });
 

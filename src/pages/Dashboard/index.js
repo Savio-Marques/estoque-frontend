@@ -1,7 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Boxes,
   BookOpen,
@@ -29,6 +27,7 @@ import Modal from '../../components/Modal';
 import AddProductForm from '../../components/AddProductForm';
 import ProfileModal from '../../components/ProfileModal';
 import StockMovementsModal from '../../components/StockMovementsModal';
+import { ledgerToast } from '../../components/LedgerToast';
 
 const formatCurrency = (value) =>
   Number(value || 0).toLocaleString('pt-BR', {
@@ -58,6 +57,7 @@ function Dashboard() {
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleCloseModal = () => {
     setActiveModal(null);
@@ -118,11 +118,21 @@ function Dashboard() {
   const parsedDebtorValue = parseFloat(debtorValue);
 
   const { addCategoryMutation } = useCategoryMutations({
-    onAddSuccess: () => handleCloseModal(),
+    onAddSuccess: () => {
+      if (!location.pathname.includes('/categories')) {
+        ledgerToast.success('Categoria salva');
+      }
+      handleCloseModal();
+    },
   });
 
   const { addProductMutation } = useProductMutations({
-    onAddSuccess: () => handleCloseModal(),
+    onAddSuccess: () => {
+      if (!location.pathname.includes('/stock')) {
+        ledgerToast.success('Produto salvo no estoque');
+      }
+      handleCloseModal();
+    },
   });
 
   const { addDebtorMutation, updateDebtorMutation } = useDebtorMutations({
@@ -153,6 +163,8 @@ function Dashboard() {
 
     if (!trimmedName || Number.isNaN(addedValue)) return;
 
+    const isOutsideDebtorsView = !location.pathname.includes('/debtors');
+
     if (matchedDebtor) {
       const nextValue = Number((Number(matchedDebtor.value || 0) + addedValue).toFixed(2));
       const combinedDesc = [matchedDebtor.description?.trim(), newDesc]
@@ -166,7 +178,7 @@ function Dashboard() {
         description: combinedDesc,
         value: nextValue,
         transactionNote: newDesc || 'Nova compra adicionada',
-        _customToast: 'Valor somado ao saldo do cliente na caderneta!',
+        _customToast: `Valor somado ao saldo de ${matchedDebtor.name}`,
       });
       return;
     }
@@ -175,6 +187,7 @@ function Dashboard() {
       name: trimmedName,
       description: newDesc,
       value: addedValue,
+      _customToast: isOutsideDebtorsView ? 'Lançamento salvo na caderneta' : undefined,
     });
   };
 
@@ -189,8 +202,6 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[var(--ledger-bg)] text-[var(--ledger-ink)] lg:flex">
-      <ToastContainer position="bottom-right" autoClose={3000} theme="light" />
-
       {/* Desktop Sidebar (>= lg) */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col bg-[var(--ledger-sidebar-bg)] text-stone-100 border-r border-white/10">
         <div className="flex h-16 items-center gap-3 border-b border-white/10 px-5">
