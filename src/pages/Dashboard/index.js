@@ -74,10 +74,21 @@ function Dashboard() {
 
   const { data: summary } = useProductSummary();
   const { data: categories = [] } = useCategories({ enabled: activeModal === 'addProduct' });
-  const { data: debtorsData } = useDebtors({ enabled: activeModal === 'addPayment' });
+  const { data: debtorsData } = useDebtors({
+    paid: false,
+    enabled: activeModal === 'addPayment',
+  });
+  const { data: settledDebtorsData } = useDebtors({
+    paid: true,
+    enabled: activeModal === 'addPayment',
+  });
   const existingDebtors = useMemo(
     () => debtorsData?.debtorDTOList || [],
     [debtorsData]
+  );
+  const settledDebtors = useMemo(
+    () => settledDebtorsData?.debtorDTOList || [],
+    [settledDebtorsData]
   );
 
   const matchedDebtor = useMemo(() => {
@@ -86,9 +97,22 @@ function Dashboard() {
     return existingDebtors.find((d) => d.name?.trim().toLowerCase() === normalized) || null;
   }, [existingDebtors, debtorName]);
 
+  const matchedSettledDebtor = useMemo(() => {
+    const normalized = debtorName.trim().toLowerCase();
+    if (!normalized || matchedDebtor) return null;
+    return settledDebtors.find((d) => d.name?.trim().toLowerCase() === normalized) || null;
+  }, [settledDebtors, debtorName, matchedDebtor]);
+
   const uniqueDebtorNames = useMemo(
-    () => Array.from(new Set(existingDebtors.map((d) => d.name?.trim()).filter(Boolean))),
-    [existingDebtors]
+    () =>
+      Array.from(
+        new Set(
+          [...existingDebtors, ...settledDebtors]
+            .map((d) => d.name?.trim())
+            .filter(Boolean)
+        )
+      ),
+    [existingDebtors, settledDebtors]
   );
 
   const parsedDebtorValue = parseFloat(debtorValue);
@@ -141,6 +165,7 @@ function Dashboard() {
         name: matchedDebtor.name,
         description: combinedDesc,
         value: nextValue,
+        transactionNote: newDesc || 'Nova compra adicionada',
         _customToast: 'Valor somado ao saldo do cliente na caderneta!',
       });
       return;
@@ -553,6 +578,17 @@ function Dashboard() {
                     {formatCurrency(Number(matchedDebtor.value || 0) + parsedDebtorValue)}
                   </p>
                 )}
+              </div>
+            )}
+
+            {matchedSettledDebtor && (
+              <div className="mt-1.5 rounded-xl border border-[var(--ledger-accent)]/25 bg-[var(--ledger-accent-soft)]/70 px-3 py-2 text-xs text-[var(--ledger-ink)]">
+                <p className="font-semibold text-[var(--ledger-accent)]">
+                  Cliente recorrente encontrado ({matchedSettledDebtor.name})
+                </p>
+                <p className="mt-0.5 text-[var(--ledger-ink-muted)]">
+                  A ficha anterior já quitada será reaberta mantendo todo o histórico de compras.
+                </p>
               </div>
             )}
           </div>

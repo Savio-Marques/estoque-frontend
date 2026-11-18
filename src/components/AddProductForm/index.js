@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  CategoryFieldWithCreate,
+  ProductPricingHelper,
+} from '../ProductFormPrimitives';
 
 function AddProductForm({ categories = [], onSave, onCancel, isPending = false }) {
   const [name, setName] = useState('');
@@ -33,8 +30,6 @@ function AddProductForm({ categories = [], onSave, onCancel, isPending = false }
     });
   };
 
-  const selectedCategoryName = categories.find((c) => String(c.id) === String(categoryId))?.name;
-
   return (
     <form className="ledger-form" onSubmit={handleSubmit}>
       <div className="ledger-field">
@@ -51,26 +46,14 @@ function AddProductForm({ categories = [], onSave, onCancel, isPending = false }
         />
       </div>
 
-      <div className="ledger-field">
-        <label htmlFor="add-product-category">Categoria</label>
-        <Select
-          value={categoryId || null}
-          onValueChange={(val) => setCategoryId(val ? String(val) : '')}
-        >
-          <SelectTrigger id="add-product-category" className="w-full">
-            <SelectValue placeholder="Selecione uma categoria...">
-              {() => selectedCategoryName || 'Selecione uma categoria...'}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={String(cat.id)}>
-                {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <CategoryFieldWithCreate
+        id="add-product-category"
+        categories={categories}
+        value={categoryId}
+        onChange={setCategoryId}
+        autoOpenWhenEmpty
+        disabled={isPending}
+      />
 
       <div className="ledger-form-row">
         <div className="ledger-field">
@@ -140,6 +123,12 @@ function AddProductForm({ categories = [], onSave, onCancel, isPending = false }
           </div>
         </div>
       </div>
+
+      <ProductPricingHelper
+        costPrice={costPrice}
+        salePrice={salePrice}
+        onApplySalePrice={setSalePrice}
+      />
 
       <div className="ledger-form-actions">
         {onCancel && (

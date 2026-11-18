@@ -73,6 +73,20 @@ function getMarginPercent(costPrice, salePrice) {
   return ((sale - cost) / cost) * 100;
 }
 
+function getMarginTone(margin) {
+  if (margin === null) return 'font-semibold text-[var(--ledger-ink-muted)]';
+  const rounded = Math.round(margin);
+  if (rounded < 0) return 'font-bold text-[var(--ledger-danger)]';
+  if (rounded === 0) return 'font-semibold text-amber-700';
+  return 'font-semibold text-[var(--ledger-accent)]';
+}
+
+function formatMarginLabel(margin) {
+  const rounded = Math.round(margin);
+  if (Object.is(rounded, -0) || rounded === 0) return '0%';
+  return `${rounded > 0 ? '+' : ''}${rounded}%`;
+}
+
 function Stock() {
   const outletContext = useOutletContext() || {};
   const { summary, openModal, openMovements } = outletContext;
@@ -623,9 +637,13 @@ function Stock() {
                         <span className="block text-[0.66rem] font-semibold uppercase tracking-wider text-[var(--ledger-ink-subtle)]">
                           {margin !== null ? 'Margem' : 'Mínimo'}
                         </span>
-                        <span className="font-mono-tabular mt-0.5 block text-xs font-semibold text-[var(--ledger-accent)]">
+                        <span
+                          className={`font-mono-tabular mt-0.5 block text-xs ${getMarginTone(
+                            margin
+                          )}`}
+                        >
                           {margin !== null
-                            ? `${margin >= 0 ? '+' : ''}${margin.toFixed(0)}%`
+                            ? formatMarginLabel(margin)
                             : `${product.minQuantity ?? 5} un.`}
                         </span>
                       </div>
@@ -743,9 +761,8 @@ function Stock() {
                           {formatCurrency(product.salePrice)}
                         </div>
                         {margin !== null && (
-                          <div className="mt-0.5 text-[0.68rem] font-semibold text-[var(--ledger-accent)]">
-                            {margin >= 0 ? '+' : ''}
-                            {margin.toFixed(0)}%
+                          <div className={`mt-0.5 text-[0.68rem] ${getMarginTone(margin)}`}>
+                            {formatMarginLabel(margin)}
                           </div>
                         )}
                       </td>

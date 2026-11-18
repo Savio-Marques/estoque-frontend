@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 import Modal from '../Modal';
 
-function EditDebtorModal({ debtor, onSave, onClose, isPending = false }) {
+function EditDebtorModal({ debtor, onSave, onClose, onDeleteRequest, isPending = false }) {
   const [formData, setFormData] = useState({ name: '', description: '', value: '' });
 
   useEffect(() => {
@@ -78,6 +79,21 @@ function EditDebtorModal({ debtor, onSave, onClose, isPending = false }) {
             />
           </div>
         </div>
+
+        {onDeleteRequest && (
+          <div className="ledger-danger-zone">
+            <span>Excluir lançamento por engano</span>
+            <button
+              type="button"
+              className="ledger-btn-danger"
+              onClick={() => onDeleteRequest(debtor)}
+              disabled={isPending}
+            >
+              <Trash2 className="size-4" />
+              Excluir Registro
+            </button>
+          </div>
+        )}
 
         <div className="ledger-form-actions">
           <button

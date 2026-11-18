@@ -7,6 +7,7 @@ import {
   CheckCheck,
   Coins,
   FileText,
+  History,
   Pencil,
   Plus,
   Search,
@@ -17,6 +18,7 @@ import {
 import { useDebtors, useDebtorMutations } from '../../hooks/useDebtors';
 import { InsightCard } from '@/components/motion/insight-card';
 import { NumberTicker } from '@/components/motion/number-ticker';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -26,6 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import EditDebtorModal from '../../components/EditDebtorModal';
+import DebtorStatementModal from '../../components/DebtorStatementModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import Modal from '../../components/Modal';
 
@@ -69,8 +72,10 @@ function Debtors() {
   const [partialAmount, setPartialAmount] = useState('');
   const [debtorSearchTerm, setDebtorSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [statusTab, setStatusTab] = useState('open');
   const [sortBy, setSortBy] = useState('recent');
   const [onlyOverdue, setOnlyOverdue] = useState(false);
+  const [statementState, setStatementState] = useState({ isOpen: false, debtor: null });
   const [confirmationProps, setConfirmationProps] = useState({ isOpen: false });
 
   useEffect(() => {
@@ -101,15 +106,36 @@ function Debtors() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const { data: debtorsData, isLoading, isFetching, isError } = useDebtors({
+  const openDebtorsQuery = useDebtors({
     searchTerm: debouncedSearch,
+    paid: false,
   });
 
-  const debtors = useMemo(() => debtorsData?.debtorDTOList || [], [debtorsData]);
-  const summaryDebtorsDTO = debtorsData?.summaryDebtorsDTO || { totalValue: 0, totalDebtors: 0 };
+  const paidDebtorsQuery = useDebtors({
+    searchTerm: debouncedSearch,
+    paid: true,
+  });
+
+  const isPaidView = statusTab === 'paid';
+  const activeQuery = isPaidView ? paidDebtorsQuery : openDebtorsQuery;
+  const { isLoading, isFetching, isError } = activeQuery;
+
+  const openDebtors = useMemo(
+    () => openDebtorsQuery.data?.debtorDTOList || [],
+    [openDebtorsQuery.data]
+  );
+  const paidDebtors = useMemo(
+    () => paidDebtorsQuery.data?.debtorDTOList || [],
+    [paidDebtorsQuery.data]
+  );
+
+  const summaryDebtorsDTO = openDebtorsQuery.data?.summaryDebtorsDTO || {
+    totalValue: 0,
+    totalDebtors: 0,
+  };
 
   const overdueStats = useMemo(() => {
-    return debtors.reduce(
+    return openDebtors.reduce(
       (acc, debtor) => {
         if (getDaysOpen(debtor.date) >= 30) {
           acc.count += 1;
@@ -119,36 +145,74 @@ function Debtors() {
       },
       { count: 0, total: 0 }
     );
-  }, [debtors]);
+  }, [openDebtors]);
+
+  const effectiveSortBy = isPaidView && sortBy === 'highest' ? 'recent' : sortBy;
 
   const visibleDebtors = useMemo(() => {
-    const filtered = onlyOverdue
-      ? debtors.filter((d) => getDaysOpen(d.date) >= 30)
-      : [...debtors];
+    const baseList = isPaidView ? paidDebtors : openDebtors;
+    const filtered =
+      !isPaidView && onlyOverdue
+        ? baseList.filter((d) => getDaysOpen(d.date) >= 30)
+        : [...baseList];
+
+    const getRefTimestamp = (item) => {
+      const refDate = isPaidView ? item.settledAt || item.date : item.date;
+      return new Date(refDate || 0).getTime();
+    };
 
     return filtered.sort((a, b) => {
-      switch (sortBy) {
+      switch (effectiveSortBy) {
         case 'oldest':
-          return new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime();
+          return getRefTimestamp(a) - getRefTimestamp(b);
         case 'highest':
           return Number(b.value || 0) - Number(a.value || 0);
         case 'name':
           return (a.name || '').localeCompare(b.name || '', 'pt-BR');
         case 'recent':
         default:
-          return new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime();
+          return getRefTimestamp(b) - getRefTimestamp(a);
       }
     });
-  }, [debtors, onlyOverdue, sortBy]);
+  }, [isPaidView, paidDebtors, openDebtors, onlyOverdue, effectiveSortBy]);
 
-  const { updateDebtorMutation, partialPayMutation, markAsPaidMutation } = useDebtorMutations({
+  const activeStatementDebtor = useMemo(() => {
+    if (!statementState.debtor) return null;
+    return (
+      [...openDebtors, ...paidDebtors].find((d) => d.id === statementState.debtor.id) ||
+      statementState.debtor
+    );
+  }, [statementState.debtor, openDebtors, paidDebtors]);
+
+  const {
+    updateDebtorMutation,
+    partialPayMutation,
+    markAsPaidMutation,
+    deleteDebtorMutation,
+  } = useDebtorMutations({
     onUpdateSuccess: () => setEditingDebtor(null),
     onPaidSuccess: () => {
       setConfirmationProps({ isOpen: false });
       setPayingDebtor(null);
       setPartialAmount('');
     },
+    onDeleteSuccess: () => {
+      setEditingDebtor(null);
+      setConfirmationProps({ isOpen: false });
+    },
   });
+
+  const handleStatusTabChange = (nextTab) => {
+    if (!nextTab) return;
+    setStatusTab(nextTab);
+    if (nextTab === 'paid') {
+      setOnlyOverdue(false);
+    }
+  };
+
+  const handleOpenStatement = (debtor = null) => {
+    setStatementState({ isOpen: true, debtor });
+  };
 
   const handleSaveChanges = (updatedData) => {
     updateDebtorMutation.mutate({
@@ -161,9 +225,19 @@ function Debtors() {
     setConfirmationProps({
       isOpen: true,
       title: 'Confirmar Quitação',
-      message: `Confirmar pagamento integral de "${debtor.name}" no valor de ${formatCurrency(debtor.value)}?`,
+      message: `Confirmar pagamento integral de "${debtor.name}" no valor de ${formatCurrency(debtor.value)}? A conta será movida para "Quitados" com todo o histórico preservado.`,
       confirmButtonClass: 'confirm-button-paid',
       onConfirm: () => markAsPaidMutation.mutateAsync(debtor.id),
+    });
+  };
+
+  const handleDeleteRequest = (debtor) => {
+    setConfirmationProps({
+      isOpen: true,
+      title: 'Excluir Registro Permanentemente',
+      message: `Tem certeza de que deseja apagar permanentemente o registro e o extrato de "${debtor.name}"? Utilize apenas para lançamentos criados por engano.`,
+      confirmButtonClass: '',
+      onConfirm: () => deleteDebtorMutation.mutateAsync(debtor.id),
     });
   };
 
@@ -192,23 +266,34 @@ function Debtors() {
             Caderneta de Clientes
           </h2>
           <p className="mt-1 hidden max-w-xl text-sm text-[var(--ledger-ink-muted)] md:block">
-            Consulte os itens anotados, registre abatimentos parciais e quite saldos em aberto.
+            Consulte extratos por cliente, registre abatimentos parciais e quite saldos sem perder o histórico.
           </p>
         </div>
 
-        {openModal && (
+        <div className="grid w-full grid-cols-2 gap-2.5 sm:flex sm:w-auto sm:shrink-0 sm:items-center">
           <button
             type="button"
-            onClick={() => openModal('addPayment')}
-            className="ledger-btn-primary w-full sm:w-auto sm:shrink-0"
+            onClick={() => handleOpenStatement(null)}
+            className="ledger-btn-secondary w-full sm:w-auto"
           >
-            <Plus className="size-4 shrink-0" />
-            <span>Novo Lançamento</span>
+            <History className="size-4 shrink-0 text-[var(--ledger-ink-muted)]" />
+            <span>Extrato</span>
           </button>
-        )}
+
+          {openModal && (
+            <button
+              type="button"
+              onClick={() => openModal('addPayment')}
+              className="ledger-btn-primary w-full sm:w-auto"
+            >
+              <Plus className="size-4 shrink-0" />
+              <span>Novo Lançamento</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* 3 Debtor KPI Cards */}
+      {/* 3 Debtor KPI Cards (always reflect active open receivables) */}
       <div className="easeui-theme grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         <InsightCard
           label="Total a Receber"
@@ -225,8 +310,11 @@ function Debtors() {
 
         <button
           type="button"
-          onClick={() => setOnlyOverdue(false)}
-          aria-pressed={!onlyOverdue}
+          onClick={() => {
+            setStatusTab('open');
+            setOnlyOverdue(false);
+          }}
+          aria-pressed={!isPaidView && !onlyOverdue}
           className="flex h-full w-full rounded-xl text-left transition-transform active:scale-[0.99]"
         >
           <InsightCard
@@ -240,7 +328,7 @@ function Debtors() {
             subtitle="Contas ativas na caderneta"
             icon={<Users className="size-4 text-[var(--ledger-amber)]" />}
             className={`cursor-pointer rounded-xl border bg-[var(--ledger-surface)] shadow-none transition-colors hover:border-[var(--ledger-border-strong)] ${
-              !onlyOverdue
+              !isPaidView && !onlyOverdue
                 ? 'border-[var(--ledger-accent)] ring-2 ring-[var(--ledger-accent)]/20'
                 : 'border-[var(--ledger-border)]'
             }`}
@@ -249,8 +337,15 @@ function Debtors() {
 
         <button
           type="button"
-          onClick={() => setOnlyOverdue((prev) => !prev)}
-          aria-pressed={onlyOverdue}
+          onClick={() => {
+            if (isPaidView) {
+              setStatusTab('open');
+              setOnlyOverdue(true);
+            } else {
+              setOnlyOverdue((prev) => !prev);
+            }
+          }}
+          aria-pressed={!isPaidView && onlyOverdue}
           className="flex h-full w-full rounded-xl text-left transition-transform active:scale-[0.99]"
         >
           <InsightCard
@@ -265,7 +360,7 @@ function Debtors() {
               />
             }
             className={`cursor-pointer rounded-xl border bg-[var(--ledger-surface)] shadow-none transition-colors hover:border-red-400 ${
-              onlyOverdue
+              !isPaidView && onlyOverdue
                 ? 'border-red-500 ring-2 ring-red-500/25'
                 : overdueStats.count > 0
                   ? 'border-red-300/80'
@@ -275,10 +370,10 @@ function Debtors() {
         </button>
       </div>
 
-      {/* Search Bar & Sorting */}
+      {/* Search Bar, Status Tabs & Sorting */}
       <div className="rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-3.5 sm:p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="ledger-search-wrapper min-w-0 flex-1 sm:max-w-md">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="ledger-search-wrapper min-w-0 flex-1 lg:max-w-md">
             <Search className="ledger-search-icon" />
             <input
               ref={searchInputRef}
@@ -307,24 +402,57 @@ function Debtors() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="hidden text-xs font-semibold text-[var(--ledger-ink-subtle)] sm:inline">
-              Ordenar:
-            </span>
-            <Select
-              value={sortBy}
-              onValueChange={(val) => setSortBy(val ? String(val) : 'recent')}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:justify-end">
+            <Tabs
+              value={statusTab}
+              onValueChange={handleStatusTabChange}
+              className="w-full sm:w-auto"
             >
-              <SelectTrigger aria-label="Ordenar lançamentos" className="w-full sm:w-48">
-                <SelectValue>{(val) => SORT_LABELS[val] || SORT_LABELS.recent}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">{SORT_LABELS.recent}</SelectItem>
-                <SelectItem value="oldest">{SORT_LABELS.oldest}</SelectItem>
-                <SelectItem value="highest">{SORT_LABELS.highest}</SelectItem>
-                <SelectItem value="name">{SORT_LABELS.name}</SelectItem>
-              </SelectContent>
-            </Select>
+              <TabsList className="grid h-10 w-full grid-cols-2 rounded-lg border border-[var(--ledger-border)] bg-[var(--ledger-bg)] p-1 sm:inline-flex sm:h-9 sm:w-auto">
+                <TabsTrigger
+                  value="open"
+                  className="inline-flex h-full pointer-coarse:h-full items-center justify-center gap-1.5 rounded-md px-3 py-0 text-xs font-semibold text-[var(--ledger-ink-muted)] data-[active]:text-[var(--ledger-ink)]"
+                >
+                  <span>Em Aberto</span>
+                  <span className="font-mono-tabular rounded bg-[var(--ledger-surface-muted)] px-1.5 py-0.2 text-[0.68rem] text-[var(--ledger-ink-subtle)]">
+                    {openDebtors.length}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="paid"
+                  className="inline-flex h-full pointer-coarse:h-full items-center justify-center gap-1.5 rounded-md px-3 py-0 text-xs font-semibold text-[var(--ledger-ink-muted)] data-[active]:text-[var(--ledger-ink)]"
+                >
+                  <span>Quitados</span>
+                  <span className="font-mono-tabular rounded bg-[var(--ledger-surface-muted)] px-1.5 py-0.2 text-[0.68rem] text-[var(--ledger-ink-subtle)]">
+                    {paidDebtors.length}
+                  </span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <div className="flex items-center gap-2">
+              <span className="hidden text-xs font-semibold text-[var(--ledger-ink-subtle)] sm:inline">
+                Ordenar:
+              </span>
+              <Select
+                value={effectiveSortBy}
+                onValueChange={(val) => setSortBy(val ? String(val) : 'recent')}
+              >
+                <SelectTrigger aria-label="Ordenar lançamentos" className="w-full sm:w-44">
+                  <SelectValue>
+                    {(val) => SORT_LABELS[val] || SORT_LABELS.recent}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">{SORT_LABELS.recent}</SelectItem>
+                  <SelectItem value="oldest">{SORT_LABELS.oldest}</SelectItem>
+                  {!isPaidView && (
+                    <SelectItem value="highest">{SORT_LABELS.highest}</SelectItem>
+                  )}
+                  <SelectItem value="name">{SORT_LABELS.name}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </div>
@@ -344,17 +472,34 @@ function Debtors() {
           <BookOpen className="size-8 text-[var(--ledger-ink-subtle)]" />
           <div>
             <p className="text-base font-bold text-[var(--ledger-ink)]">
-              {onlyOverdue && debtors.length > 0
-                ? 'Nenhum cliente com atraso acima de 30 dias'
-                : 'Nenhum lançamento encontrado'}
+              {isPaidView
+                ? 'Nenhuma conta quitada encontrada'
+                : onlyOverdue && openDebtors.length > 0
+                  ? 'Nenhum cliente com atraso acima de 30 dias'
+                  : 'Nenhum lançamento encontrado'}
             </p>
             <p className="mt-1 text-sm text-[var(--ledger-ink-subtle)]">
-              {onlyOverdue && debtors.length > 0
-                ? 'Todos os saldos em aberto estão dentro do prazo de 30 dias.'
-                : 'Não há clientes em aberto correspondentes à busca atual.'}
+              {isPaidView
+                ? debouncedSearch
+                  ? 'Nenhum cliente quitado corresponde à busca atual.'
+                  : 'Quando você quitar saldos em aberto, eles ficarão arquivados aqui com todo o histórico.'
+                : onlyOverdue && openDebtors.length > 0
+                  ? 'Todos os saldos em aberto estão dentro do prazo de 30 dias.'
+                  : 'Não há clientes em aberto correspondentes à busca atual.'}
             </p>
           </div>
-          {onlyOverdue && debtors.length > 0 ? (
+          {isPaidView ? (
+            openDebtors.length > 0 &&
+            !debouncedSearch && (
+              <button
+                type="button"
+                onClick={() => setStatusTab('open')}
+                className="ledger-btn-secondary mt-1"
+              >
+                Ver contas em aberto
+              </button>
+            )
+          ) : onlyOverdue && openDebtors.length > 0 ? (
             <button
               type="button"
               onClick={() => setOnlyOverdue(false)}
@@ -388,89 +533,131 @@ function Debtors() {
                 <thead>
                   <tr className="border-b border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[0.7rem] font-bold uppercase tracking-wider text-[var(--ledger-ink-subtle)]">
                     <th className="px-5 py-3.5">Cliente</th>
-                    <th className="px-5 py-3.5">Descrição</th>
-                    <th className="px-5 py-3.5">Data de Entrada</th>
-                    <th className="px-5 py-3.5 text-right">Saldo Devido</th>
+                    <th className="px-5 py-3.5">
+                      {isPaidView ? 'Última Descrição' : 'Descrição'}
+                    </th>
+                    <th className="px-5 py-3.5">
+                      {isPaidView ? 'Data de Quitação' : 'Data de Entrada'}
+                    </th>
+                    <th className="px-5 py-3.5 text-right">
+                      {isPaidView ? 'Situação' : 'Saldo Devido'}
+                    </th>
                     <th className="px-5 py-3.5 text-right">Operações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--ledger-border)]">
                   {visibleDebtors.map((debtor) => {
                     const daysOpen = getDaysOpen(debtor.date);
-                    const isOverdue = daysOpen >= 30;
+                    const isOverdue = !isPaidView && daysOpen >= 30;
 
                     return (
-                    <tr
-                      key={debtor.id}
-                      className="transition-colors hover:bg-[var(--ledger-surface-hover)]"
-                    >
-                      <td className="px-5 py-3.5 align-middle">
-                        <span className="font-bold text-[var(--ledger-ink)]">{debtor.name}</span>
-                      </td>
-                      <td className="max-w-sm px-5 py-3.5 align-middle">
-                        {debtor.description ? (
-                          <p className="text-[0.84rem] leading-snug text-[var(--ledger-ink-muted)]">
-                            {debtor.description}
-                          </p>
-                        ) : (
-                          <span className="text-xs italic text-[var(--ledger-ink-subtle)]">
-                            Sem descrição informada
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5 align-middle">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="font-mono-tabular text-xs font-medium text-[var(--ledger-ink-muted)]">
-                            {formatEntryDate(debtor.date)}
-                          </span>
-                          {daysOpen > 0 && (
-                            <span
-                              className={`font-mono-tabular inline-flex items-center rounded border px-1.5 py-0.5 text-[0.68rem] font-semibold ${
-                                isOverdue
-                                  ? 'border-red-200 bg-[var(--ledger-danger-soft)] text-[var(--ledger-danger)]'
-                                  : 'border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[var(--ledger-ink-subtle)]'
-                              }`}
-                            >
-                              há {daysOpen}d
+                      <tr
+                        key={debtor.id}
+                        className="transition-colors hover:bg-[var(--ledger-surface-hover)]"
+                      >
+                        <td className="px-5 py-3.5 align-middle">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenStatement(debtor)}
+                            title="Ver extrato completo do cliente"
+                            className="text-left font-bold text-[var(--ledger-ink)] transition-colors hover:text-[var(--ledger-accent)] hover:underline"
+                          >
+                            {debtor.name}
+                          </button>
+                        </td>
+                        <td className="max-w-sm px-5 py-3.5 align-middle">
+                          {debtor.description ? (
+                            <p className="text-[0.84rem] leading-snug text-[var(--ledger-ink-muted)]">
+                              {debtor.description}
+                            </p>
+                          ) : (
+                            <span className="text-xs italic text-[var(--ledger-ink-subtle)]">
+                              Sem descrição informada
                             </span>
                           )}
-                        </div>
-                      </td>
-                      <td className="font-mono-tabular px-5 py-3.5 text-right align-middle text-[0.95rem] font-bold text-[var(--ledger-ink)]">
-                        {formatCurrency(debtor.value)}
-                      </td>
-                      <td className="px-5 py-3.5 align-middle">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setEditingDebtor(debtor)}
-                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-2.5 text-xs font-semibold text-[var(--ledger-ink-muted)] transition-colors hover:bg-[var(--ledger-surface-muted)] hover:text-[var(--ledger-ink)]"
-                          >
-                            <Pencil className="size-3.5" />
-                            <span>Editar</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPayingDebtor(debtor);
-                              setPartialAmount('');
-                            }}
-                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-300 bg-[var(--ledger-amber-soft)] px-2.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-200/80"
-                          >
-                            <Coins className="size-3.5" />
-                            <span>Abater</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleConfirmPayment(debtor)}
-                            className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--ledger-accent)] px-3 text-xs font-semibold text-white transition-colors hover:bg-[var(--ledger-accent-hover)]"
-                          >
-                            <CheckCheck className="size-3.5" />
-                            <span>Quitar</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="px-5 py-3.5 align-middle">
+                          {isPaidView ? (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-mono-tabular text-xs font-medium text-[var(--ledger-ink-muted)]">
+                                {formatEntryDate(debtor.settledAt || debtor.date)}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-mono-tabular text-xs font-medium text-[var(--ledger-ink-muted)]">
+                                {formatEntryDate(debtor.date)}
+                              </span>
+                              {daysOpen > 0 && (
+                                <span
+                                  className={`font-mono-tabular inline-flex items-center rounded border px-1.5 py-0.5 text-[0.68rem] font-semibold ${
+                                    isOverdue
+                                      ? 'border-red-200 bg-[var(--ledger-danger-soft)] text-[var(--ledger-danger)]'
+                                      : 'border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[var(--ledger-ink-subtle)]'
+                                  }`}
+                                >
+                                  há {daysOpen}d
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5 text-right align-middle">
+                          {isPaidView ? (
+                            <span className="inline-flex items-center gap-1 rounded-md border border-[var(--ledger-accent)]/25 bg-[var(--ledger-accent-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--ledger-accent)]">
+                              <CheckCheck className="size-3.5" />
+                              Quitado
+                            </span>
+                          ) : (
+                            <span className="font-mono-tabular text-[0.95rem] font-bold text-[var(--ledger-ink)]">
+                              {formatCurrency(debtor.value)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5 align-middle">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenStatement(debtor)}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] px-2.5 text-xs font-semibold text-[var(--ledger-ink-muted)] transition-colors hover:bg-[var(--ledger-surface-muted)] hover:text-[var(--ledger-ink)]"
+                            >
+                              <History className="size-3.5" />
+                              <span>Extrato</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingDebtor(debtor)}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--ledger-border-strong)] bg-[var(--ledger-surface)] px-2.5 text-xs font-semibold text-[var(--ledger-ink-muted)] transition-colors hover:bg-[var(--ledger-surface-muted)] hover:text-[var(--ledger-ink)]"
+                            >
+                              <Pencil className="size-3.5" />
+                              <span>Editar</span>
+                            </button>
+                            {!isPaidView && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPayingDebtor(debtor);
+                                    setPartialAmount('');
+                                  }}
+                                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-300 bg-[var(--ledger-amber-soft)] px-2.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-200/80"
+                                >
+                                  <Coins className="size-3.5" />
+                                  <span>Abater</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleConfirmPayment(debtor)}
+                                  className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--ledger-accent)] px-3 text-xs font-semibold text-white transition-colors hover:bg-[var(--ledger-accent-hover)]"
+                                >
+                                  <CheckCheck className="size-3.5" />
+                                  <span>Quitar</span>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
                     );
                   })}
                 </tbody>
@@ -482,88 +669,135 @@ function Debtors() {
           <div className="space-y-3 md:hidden">
             {visibleDebtors.map((debtor) => {
               const daysOpen = getDaysOpen(debtor.date);
-              const isOverdue = daysOpen >= 30;
+              const isOverdue = !isPaidView && daysOpen >= 30;
 
               return (
-              <article
-                key={debtor.id}
-                className="rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-4 shadow-2xs"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="truncate text-base font-bold text-[var(--ledger-ink)]">
-                      {debtor.name}
-                    </h3>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--ledger-ink-subtle)]">
-                      <CalendarClock className="size-3.5" />
-                      <span>Entrada em</span>
-                      <span className="font-mono-tabular font-medium text-[var(--ledger-ink-muted)]">
-                        {formatEntryDate(debtor.date)}
-                      </span>
-                      {daysOpen > 0 && (
-                        <span
-                          className={`font-mono-tabular inline-flex items-center rounded border px-1.5 py-0.5 text-[0.65rem] font-semibold ${
-                            isOverdue
-                              ? 'border-red-200 bg-[var(--ledger-danger-soft)] text-[var(--ledger-danger)]'
-                              : 'border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[var(--ledger-ink-subtle)]'
-                          }`}
-                        >
-                          há {daysOpen}d
+                <article
+                  key={debtor.id}
+                  className="rounded-2xl border border-[var(--ledger-border)] bg-[var(--ledger-surface)] p-4 shadow-2xs"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenStatement(debtor)}
+                        className="block max-w-full truncate text-left text-base font-bold text-[var(--ledger-ink)] hover:text-[var(--ledger-accent)]"
+                      >
+                        {debtor.name}
+                      </button>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--ledger-ink-subtle)]">
+                        <CalendarClock className="size-3.5" />
+                        <span>{isPaidView ? 'Quitado em' : 'Entrada em'}</span>
+                        <span className="font-mono-tabular font-medium text-[var(--ledger-ink-muted)]">
+                          {formatEntryDate(
+                            isPaidView ? debtor.settledAt || debtor.date : debtor.date
+                          )}
                         </span>
-                      )}
+                        {!isPaidView && daysOpen > 0 && (
+                          <span
+                            className={`font-mono-tabular inline-flex items-center rounded border px-1.5 py-0.5 text-[0.65rem] font-semibold ${
+                              isOverdue
+                                ? 'border-red-200 bg-[var(--ledger-danger-soft)] text-[var(--ledger-danger)]'
+                                : 'border-[var(--ledger-border)] bg-[var(--ledger-bg)] text-[var(--ledger-ink-subtle)]'
+                            }`}
+                          >
+                            há {daysOpen}d
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <span className="font-mono-tabular shrink-0 rounded-lg bg-[var(--ledger-bg)] px-2.5 py-1 text-base font-extrabold text-[var(--ledger-ink)]">
-                    {formatCurrency(debtor.value)}
-                  </span>
-                </div>
-
-                {/* Description Block */}
-                <div className="mt-3 flex items-start gap-2 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)]/70 px-3 py-2.5">
-                  <FileText className="mt-0.5 size-3.5 shrink-0 text-[var(--ledger-ink-subtle)]" />
-                  <p className="text-[0.83rem] leading-relaxed text-[var(--ledger-ink-muted)]">
-                    {debtor.description ? (
-                      debtor.description
+                    {isPaidView ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-[var(--ledger-accent)]/25 bg-[var(--ledger-accent-soft)] px-2.5 py-1 text-xs font-bold text-[var(--ledger-accent)]">
+                        <CheckCheck className="size-3.5" />
+                        Quitado
+                      </span>
                     ) : (
-                      <span className="italic text-[var(--ledger-ink-subtle)]">
-                        Sem descrição registrada
+                      <span className="font-mono-tabular shrink-0 rounded-lg bg-[var(--ledger-bg)] px-2.5 py-1 text-base font-extrabold text-[var(--ledger-ink)]">
+                        {formatCurrency(debtor.value)}
                       </span>
                     )}
-                  </p>
-                </div>
+                  </div>
 
-                {/* Thumb-friendly 40px+ Action Strip */}
-                <div className="mt-3.5 grid grid-cols-3 gap-2 border-t border-[var(--ledger-border)] pt-3">
-                  <button
-                    type="button"
-                    onClick={() => setEditingDebtor(debtor)}
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] px-2 text-xs font-semibold text-[var(--ledger-ink)] active:scale-95"
-                  >
-                    <Pencil className="size-3.5 shrink-0" />
-                    <span>Editar</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPayingDebtor(debtor);
-                      setPartialAmount('');
-                    }}
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-[var(--ledger-amber-soft)] px-2 text-xs font-semibold text-amber-900 active:scale-95"
-                  >
-                    <Coins className="size-3.5 shrink-0" />
-                    <span>Abater</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleConfirmPayment(debtor)}
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--ledger-accent)] px-2 text-xs font-semibold text-white active:scale-95"
-                  >
-                    <CheckCheck className="size-3.5 shrink-0" />
-                    <span>Quitar</span>
-                  </button>
-                </div>
-              </article>
+                  {/* Description Block */}
+                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)]/70 px-3 py-2.5">
+                    <FileText className="mt-0.5 size-3.5 shrink-0 text-[var(--ledger-ink-subtle)]" />
+                    <p className="text-[0.83rem] leading-relaxed text-[var(--ledger-ink-muted)]">
+                      {debtor.description ? (
+                        debtor.description
+                      ) : (
+                        <span className="italic text-[var(--ledger-ink-subtle)]">
+                          Sem descrição registrada
+                        </span>
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Thumb-friendly Action Strip */}
+                  {isPaidView ? (
+                    <div className="mt-3.5 grid grid-cols-2 gap-2 border-t border-[var(--ledger-border)] pt-3">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenStatement(debtor)}
+                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[var(--ledger-accent)]/30 bg-[var(--ledger-accent-soft)] px-2 text-xs font-semibold text-[var(--ledger-accent)] active:scale-95"
+                      >
+                        <History className="size-3.5 shrink-0" />
+                        <span>Ver Extrato</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingDebtor(debtor)}
+                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[var(--ledger-border-strong)] bg-[var(--ledger-bg)] px-2 text-xs font-semibold text-[var(--ledger-ink)] active:scale-95"
+                      >
+                        <Pencil className="size-3.5 shrink-0" />
+                        <span>Editar</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-3.5 space-y-2 border-t border-[var(--ledger-border)] pt-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPayingDebtor(debtor);
+                            setPartialAmount('');
+                          }}
+                          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-[var(--ledger-amber-soft)] px-2 text-xs font-semibold text-amber-900 active:scale-95"
+                        >
+                          <Coins className="size-3.5 shrink-0" />
+                          <span>Abater</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmPayment(debtor)}
+                          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--ledger-accent)] px-2 text-xs font-semibold text-white active:scale-95"
+                        >
+                          <CheckCheck className="size-3.5 shrink-0" />
+                          <span>Quitar</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenStatement(debtor)}
+                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-2 text-xs font-semibold text-[var(--ledger-ink-muted)] active:scale-95"
+                        >
+                          <History className="size-3.5 shrink-0" />
+                          <span>Extrato</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingDebtor(debtor)}
+                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--ledger-border)] bg-[var(--ledger-bg)] px-2 text-xs font-semibold text-[var(--ledger-ink-muted)] active:scale-95"
+                        >
+                          <Pencil className="size-3.5 shrink-0" />
+                          <span>Editar</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </article>
               );
             })}
           </div>
@@ -574,7 +808,14 @@ function Debtors() {
         debtor={editingDebtor}
         onSave={handleSaveChanges}
         onClose={() => setEditingDebtor(null)}
-        isPending={updateDebtorMutation.isPending}
+        onDeleteRequest={handleDeleteRequest}
+        isPending={updateDebtorMutation.isPending || deleteDebtorMutation.isPending}
+      />
+
+      <DebtorStatementModal
+        isOpen={statementState.isOpen}
+        debtor={activeStatementDebtor}
+        onClose={() => setStatementState((prev) => ({ ...prev, isOpen: false }))}
       />
 
       {/* Partial Pay Modal */}
@@ -604,7 +845,7 @@ function Debtors() {
               <div className="mt-2 flex items-center justify-between gap-2 border-t border-dashed border-[var(--ledger-border-strong)] pt-2 text-xs">
                 {remainingBalance === 0 ? (
                   <span className="font-semibold text-[var(--ledger-accent)]">
-                    Quitação integral — o registro será encerrado
+                    Quitação integral — a conta irá para Quitados com histórico salvo
                   </span>
                 ) : (
                   <>

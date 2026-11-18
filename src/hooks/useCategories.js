@@ -17,11 +17,14 @@ export function useCategoryMutations({ onAddSuccess, onUpdateSuccess, onDeleteSu
   const queryClient = useQueryClient();
 
   const addCategoryMutation = useMutation({
-    mutationFn: (name) => api.post('category', { name }),
-    onSuccess: () => {
+    mutationFn: async (name) => {
+      const res = await api.post('category', { name });
+      return res.data;
+    },
+    onSuccess: (createdCategory) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Categoria adicionada com sucesso!');
-      if (onAddSuccess) onAddSuccess();
+      if (onAddSuccess) onAddSuccess(createdCategory);
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Falha ao adicionar categoria.');

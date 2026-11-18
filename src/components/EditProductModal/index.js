@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import Modal from '../Modal';
+import {
+  CategoryFieldWithCreate,
+  ProductPricingHelper,
+} from '../ProductFormPrimitives';
 
 function EditProductModal({ product, categories = [], onSave, onClose, onDeleteRequest, isPending = false }) {
   const [formData, setFormData] = useState({
@@ -57,10 +54,6 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
     });
   };
 
-  const selectedCategoryName = categories.find(
-    (c) => String(c.id) === String(formData.categoryId)
-  )?.name;
-
   return (
     <Modal isOpen={Boolean(product)} onClose={onClose} title={`Editar · ${product.name}`}>
       <form className="ledger-form" onSubmit={handleSubmit}>
@@ -77,28 +70,15 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
           />
         </div>
 
-        <div className="ledger-field">
-          <label htmlFor="edit-product-category">Categoria</label>
-          <Select
-            value={formData.categoryId ? String(formData.categoryId) : null}
-            onValueChange={(val) =>
-              setFormData((prev) => ({ ...prev, categoryId: val ? String(val) : '' }))
-            }
-          >
-            <SelectTrigger id="edit-product-category" className="w-full">
-              <SelectValue placeholder="Selecione uma categoria...">
-                {() => selectedCategoryName || 'Selecione uma categoria...'}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={String(cat.id)}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <CategoryFieldWithCreate
+          id="edit-product-category"
+          categories={categories}
+          value={formData.categoryId ? String(formData.categoryId) : ''}
+          onChange={(nextCatId) =>
+            setFormData((prev) => ({ ...prev, categoryId: nextCatId }))
+          }
+          disabled={isPending}
+        />
 
         <div className="ledger-form-row">
           <div className="ledger-field">
@@ -168,6 +148,14 @@ function EditProductModal({ product, categories = [], onSave, onClose, onDeleteR
             </div>
           </div>
         </div>
+
+        <ProductPricingHelper
+          costPrice={formData.costPrice}
+          salePrice={formData.salePrice}
+          onApplySalePrice={(nextSale) =>
+            setFormData((prev) => ({ ...prev, salePrice: nextSale }))
+          }
+        />
 
         <div className="ledger-danger-zone">
           <span>Remover item permanentemente</span>
