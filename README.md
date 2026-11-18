@@ -1,19 +1,18 @@
 # 📦 BuscapEstoque — Frontend
 
-![Status do Projeto](https://img.shields.io/badge/status-conclu%C3%ADdo-brightgreen)
-![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=black)
-![TanStack Query](https://img.shields.io/badge/TanStack%20Query-5.0-FF4154?logo=reactquery&logoColor=white)
-![React Router](https://img.shields.io/badge/React%20Router-v6-CA4245?logo=reactrouter&logoColor=white)
-![Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?logo=vercel&logoColor=white)
-![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)
+[![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![TanStack Query](https://img.shields.io/badge/TanStack_Query-v5-FF4154?logo=reactquery&logoColor=white)](https://tanstack.com/query/latest)
+[![Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?logo=vercel&logoColor=white)](https://buscapestoque.vercel.app)
 
-Uma aplicação web moderna, responsiva e de alta performance desenvolvida em **React 18** para gerenciamento completo de **estoque, categorias de produtos e controle de pagamentos pendentes (caderneta de devedores)**.
+Interface web e PWA desenvolvida em **React 18 + Vite 8 + Tailwind CSS v4** para gerenciamento completo de **estoque, histórico de movimentações, categorias de produtos, caderneta de devedores e administração de usuários**.
 
-A interface consome a API RESTful construída em Java com Spring Boot, oferecendo gerenciamento de estado assíncrono com **TanStack Query (React Query)**, autenticação centralizada com **JWT via Axios Interceptors**, proteção de rotas e conformidade com **acessibilidade (WCAG)** e **SEO**.
+Consome a API RESTful em Java/Spring Boot ([estoque-backend](https://github.com/Savio-Marques/estoque-backend)), com gerenciamento de cache e estado assíncrono via **TanStack Query v5**, autenticação JWT via **Axios Interceptors**, componentes acessíveis com **shadcn/ui + Base UI / Radix UI** e animações com **Motion**.
 
 ---
 
-## 🔗 Links Úteis e Demonstração
+## 🔗 Links Úteis
 
 - 🚀 **Aplicação em Produção:** [buscapestoque.vercel.app](https://buscapestoque.vercel.app)
 - 📹 **Demonstração em Vídeo:** [Assista no YouTube](https://youtu.be/z7ac9HeyzKw)
@@ -23,27 +22,25 @@ A interface consome a API RESTful construída em Java com Spring Boot, oferecend
 
 ## ✨ Funcionalidades Principais
 
-- 🔐 **Autenticação & Segurança Robustas:**
-  - Login seguro com token JWT.
-  - **Axios Interceptors** para injeção automática de `Authorization: Bearer <token>` e tratamento global de expiração de sessão (`401 Unauthorized`).
-  - **Proteção de Rotas (`PrivateRoute` e `PublicOnlyRoute`)** impedindo acessos não autorizados a URLs internas e redirecionando automaticamente usuários autenticados.
+- 🔐 **Autenticação, RBAC & Perfil:**
+  - Login seguro com token JWT, sincronização de perfil (`/auth/me`) e tratamento global de `401 Unauthorized` via Axios Interceptors.
+  - Rotas protegidas por autenticação (`PrivateRoute`, `PublicOnlyRoute`) e por perfil administrativo (`AdminRoute`).
+  - Modal de edição de perfil e senha (`ProfileModal`).
 - 📊 **Dashboard de Métricas em Tempo Real:**
-  - Resumo de total de produtos, itens com estoque baixo (≤ 5 un.) e itens sem estoque (0 un.).
-  - Cartões de estatísticas interativos com contadores em tempo real.
+  - Resumo de produtos totais, estoque baixo, itens sem estoque e total devido na caderneta com contadores animados (`NumberTicker`).
 - 📦 **Gerenciamento de Estoque (`/dashboard/stock`):**
-  - Listagem em cards com status visual colorido (*Disponível*, *Estoque Baixo*, *Sem Estoque*).
-  - Pesquisa rápida por nome com debounce (`useDebounce`) e filtro por status de estoque.
-  - Incremento e decremento rápido de quantidade com 1 clique (`Adicionar` / `Retirar`).
-  - Cadastro e edição de produtos via modal.
+  - Cadastro, edição, incremento/decremento rápido de quantidade e filtro por status ou pesquisa com debounce (`useDebounce`).
+  - Histórico recente de movimentações de estoque (`StockMovementsModal`).
 - 🏷️ **Gerenciamento de Categorias (`/dashboard/categories`):**
-  - Listagem, cadastro, edição e exclusão de categorias com modais de confirmação.
-- 📒 **Caderneta de Devedores / Pagamentos Pendentes (`/dashboard/debtors`):**
-  - Controle de clientes com saldo devedor, descrição e valor total acumulado.
-  - Ação rápida para dar baixa em pagamentos efetuados (*Marcar como Pago*).
-- 📱 **Design 100% Responsivo & Acessível (WCAG):**
-  - Layout adaptável para smartphones, tablets e desktops.
-  - Suporte completo a navegação por teclado (`:focus-visible` e tecla `Escape` para fechar modais).
-  - Labels acessíveis e suporte a leitores de tela (`aria-label`, `role="dialog"`, `aria-modal="true"`).
+  - Listagem, criação, edição e exclusão de categorias com modais de confirmação.
+- 📒 **Caderneta de Devedores (`/dashboard/debtors`):**
+  - Cadastro de clientes devedores (incluindo vínculo/baixa de itens de estoque via `AddDebtorModal`).
+  - Registro de pagamento parcial, quitação integral preservando histórico e visualização de extrato detalhado (`DebtorStatementModal`).
+- 👥 **Administração de Usuários (`/dashboard/users` — *`ADMIN`*):**
+  - Listagem, criação, edição e remoção de contas de acesso.
+- 📱 **PWA & Experiência Responsiva:**
+  - Service Worker (`/sw.js`) e `manifest.webmanifest` para instalação como aplicativo web progressivo (PWA).
+  - Sistema customizado de notificações (`LedgerToast`) e design acessível.
 
 ---
 
@@ -51,13 +48,14 @@ A interface consome a API RESTful construída em Java com Spring Boot, oferecend
 
 | Tecnologia | Função / Descrição |
 |---|---|
-| **React 18** | Biblioteca principal para construção da interface declarativa em componentes. |
-| **TanStack Query (v5)** | Gerenciamento de estado remoto, caching, deduplicação de requisições e mutações com invalidação granular. |
-| **React Router Dom (v6)** | Roteamento declarativo com suporte a rotas aninhadas (`Outlet`) e rotas privadas. |
-| **Axios** | Cliente HTTP com interceptores configurados para autenticação e tratamento de erros. |
-| **Lucide React** | Biblioteca de ícones vetoriais modernos e leves. |
-| **React Toastify** | Sistema de notificações flutuantes (toasts) para feedback ao usuário. |
-| **HTML5 & CSS3 Vanilla** | Estilização flexível com variáveis CSS, Grid, Flexbox e `@media queries`. |
+| **React 18 + Vite 8** | Biblioteca de UI com bundler rápido em ESM e suporte a TypeScript |
+| **Tailwind CSS v4** | Estilização utilitária com plugin oficial `@tailwindcss/vite` |
+| **shadcn/ui + Base UI + Radix UI** | Primitivos acessíveis (dialogs, tabs, selects, alert-dialogs, sheets) |
+| **TanStack Query (v5)** | Cache, deduplicação de requisições, queries e mutações |
+| **React Router Dom (v6)** | Roteamento aninhado e proteção de rotas |
+| **Axios** | Cliente HTTP com interceptores de JWT e tratamento de expiração |
+| **Motion** | Transições e microinterações declarativas |
+| **Lucide React & Tabler Icons** | Ícones vetoriais |
 
 ---
 
@@ -65,100 +63,86 @@ A interface consome a API RESTful construída em Java com Spring Boot, oferecend
 
 ```text
 estoque-frontend/
-├── public/
-│   ├── box.ico               # Favicon da aplicação
-│   ├── index.html            # HTML principal (SEO e Meta tags)
-│   └── robots.txt            # Regras de rastreamento para buscadores
+├── .github/workflows/ci.yml        # Pipeline CI de build no GitHub Actions
+├── public/                         # Ícones, manifest.webmanifest, robots.txt e sw.js (PWA)
 ├── src/
-│   ├── components/           # Componentes reutilizáveis
-│   │   ├── AddProductForm/   # Formulário de criação de produtos
-│   │   ├── ConfirmationModal/# Modal genérico de confirmação
-│   │   ├── EditCategoryModal/# Modal de edição de categorias
-│   │   ├── EditDebtorModal/  # Modal de edição de devedores
-│   │   ├── EditProductModal/ # Modal de edição de produtos
-│   │   ├── Modal/            # Componente base de Modal acessível
-│   │   └── PrivateRoute/     # Guard de rotas autenticadas
-│   ├── contexts/
-│   │   └── AuthContext.js    # Contexto global de autenticação (JWT e User State)
-│   ├── hooks/
-│   │   └── useDebounce.js    # Hook customizado para atraso na busca
-│   ├── pages/                # Páginas da aplicação (Rotas)
-│   │   ├── Categories/       # Gestão de Categorias
-│   │   ├── Dashboard/        # Layout principal com Navegação e Stats
-│   │   ├── Debtors/          # Caderneta de Devedores
-│   │   ├── Login/            # Tela de Autenticação
-│   │   └── Stock/            # Gestão de Estoque de Produtos
-│   ├── services/
-│   │   └── api.js            # Instância do Axios com Interceptors
-│   ├── App.js                # Provedores Globais (QueryClientProvider & AuthProvider)
-│   ├── global.css            # Estilos globais, tipografia e regras de foco
-│   ├── index.js              # Ponto de entrada React
-│   └── routes.js             # Mapeamento de rotas da aplicação
-├── .env.development          # Variáveis de ambiente de desenvolvimento
-├── .env.production           # Variáveis de ambiente de produção (Vercel)
-└── package.json              # Dependências e scripts do projeto
+│   ├── components/
+│   │   ├── AddDebtorModal/         # Cadastro de devedor com vínculo de produtos
+│   │   ├── AddProductForm/         # Formulário de criação de produtos
+│   │   ├── ConfirmationModal/      # Modal genérico de confirmação
+│   │   ├── DebtorStatementModal/   # Extrato e pagamentos de devedores
+│   │   ├── EditCategoryModal/      # Edição de categorias
+│   │   ├── EditDebtorModal/        # Edição de devedores
+│   │   ├── EditProductModal/       # Edição de produtos
+│   │   ├── LedgerToast/            # Viewport e notificações toast customizadas
+│   │   ├── Modal/                  # Modal base acessível
+│   │   ├── ProductFormPrimitives/  # Campos reutilizáveis de produto
+│   │   ├── ProfileModal/           # Edição de perfil e senha
+│   │   ├── StockMovementsModal/    # Histórico de movimentações de estoque
+│   │   ├── PrivateRoute/           # Guard de rotas autenticadas
+│   │   ├── motion/                 # Componentes animados (InsightCard, NumberTicker)
+│   │   ├── spaceui/                # Badges de status
+│   │   ├── ui/                     # Primitivos shadcn/ui (Button, Dialog, Input, Tabs, etc.)
+│   │   └── velora/                 # Fundos e padrões visuais
+│   ├── contexts/AuthContext.js     # Estado global de autenticação (JWT e usuário)
+│   ├── hooks/                      # Hooks de dados e UI (useProducts, useCategories, useDebtors, useUsers, etc.)
+│   ├── lib/utils.ts                # Utilitário `cn` (clsx + tailwind-merge)
+│   ├── pages/                      # Páginas (Login, Dashboard, Stock, Debtors, Categories, Users)
+│   ├── services/api.js             # Instância Axios com interceptores
+│   ├── styles/                     # Folhas de estilo auxiliares
+│   ├── App.js                      # QueryClientProvider, AuthProvider e rotas
+│   ├── global.css                  # Estilos globais e tokens
+│   ├── index.js                    # Ponto de entrada React + registro do Service Worker
+│   └── routes.js                   # Mapeamento de rotas públicas, privadas e admin
+├── .env.development                # URL padrão da API local (http://localhost:10000)
+├── .env.production                 # URL da API em produção (https://buscapestoque.duckdns.org)
+├── vite.config.mjs                 # Configuração Vite + Tailwind v4
+└── package.json                    # Dependências e scripts
 ```
 
 ---
 
-## 🚀 Como Executar o Projeto Localmente
+## 🚀 Como Executar Localmente
 
 ### Pré-requisitos
-- **Node.js** (v16.0 ou superior)
-- **NPM** ou **Yarn**
+- **Node.js** (v20 ou superior, recomendado v22)
+- **npm**
 
-### 1. Clonar o repositório
-```bash
-git clone https://github.com/Savio-Marques/estoque-frontend.git
-cd estoque-frontend
-```
+### Passos
 
-### 2. Instalar as dependências
-```bash
-npm install
-```
+1. **Clone o repositório e instale as dependências:**
+   ```bash
+   git clone https://github.com/Savio-Marques/estoque-frontend.git
+   cd estoque-frontend
+   npm install
+   ```
 
-### 3. Configurar as Variáveis de Ambiente
-Crie um arquivo `.env.development` na raiz do projeto (se não existir) apontando para o seu backend local ou remoto:
+2. **Confira o `.env.development` (padrão aponta para o backend na porta `10000`):**
+   ```env
+   REACT_APP_API_URL=http://localhost:10000
+   ```
 
-```env
-REACT_APP_API_URL=http://localhost:8080
-```
-
-### 4. Iniciar o servidor de desenvolvimento
-```bash
-npm start
-```
-A aplicação estará disponível em `http://localhost:3000`.
+3. **Inicie o servidor de desenvolvimento:**
+   ```bash
+   npm run dev
+   ```
+   A aplicação estará disponível em `http://localhost:3000`.
 
 ---
 
 ## 📦 Build de Produção e Deploy
 
-Para gerar o pacote otimizado e minificado para produção:
-
 ```bash
 npm run build
 ```
 
-Os arquivos prontos serão gerados na pasta `build/` (~97 KB gzippado).
-
-### Deploy na Vercel
-A aplicação é totalmente compatível com a **Vercel**:
-1. Conecte o repositório do GitHub na Vercel.
-2. Adicione a variável de ambiente `REACT_APP_API_URL` com a URL `HTTPS` da sua API backend (ex: `https://buscapestoque.duckdns.org`).
-3. O deploy será realizado automaticamente.
+Os arquivos otimizados serão gerados na pasta `build/`. O deploy contínuo está integrado à **Vercel** com a variável `REACT_APP_API_URL` apontando para a API em produção.
 
 ---
 
 ## ✒️ Autor
 
-Desenvolvido por **Sávio Marques** 👋
+Desenvolvido por **Sávio Marques**
+
 - **GitHub:** [@Savio-Marques](https://github.com/Savio-Marques)
 - **LinkedIn:** [Sávio Marques](https://www.linkedin.com/in/savio-marques)
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença [MIT](./LICENSE).
