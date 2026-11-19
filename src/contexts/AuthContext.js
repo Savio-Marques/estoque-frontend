@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 
 const AuthContext = createContext({});
 
 export const AuthProvider = ({ children }) => {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -51,6 +53,7 @@ export const AuthProvider = ({ children }) => {
     const response = await api.post('auth/login', { username, password });
     const { token, name, role } = response.data;
 
+    queryClient.clear();
     localStorage.setItem('username', username);
     if (name) localStorage.setItem('userName', name);
     localStorage.setItem('userRole', role || 'USER');
@@ -71,6 +74,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('username');
     localStorage.removeItem('userName');
     localStorage.removeItem('userRole');
+    queryClient.clear();
     setUser(null);
   };
 
